@@ -1,0 +1,30 @@
+main: com.cavetale.windicator.WindicatorPlugin
+name: Windicator
+version: 0.1
+api-version: 1.13
+description: Windicator Plugin
+author: StarTux
+website: https://cavetale.com
+depend: []
+softdepend: []
+commands:
+  windicator:
+    aliases: [win]
+    description: Admin interface
+    permission: windicator.windicator
+    usage: |-
+      -- To start set the world and the 3 core blocks,
+      -- then use the start command.
+      /win info - info
+      /win start - start game
+      /win stop - stop game
+      /win setworld - set current world
+      /win victory - toggle victory
+      -- Core name: water|mansion|end
+      /win addcore <name> - add core block (look at)
+      /win removecore <name - remove core block (look at)
+      /win clearcores - remove all cores
+permissions:
+  windicator.windicator:
+    description: Use /windicator
+    default: op

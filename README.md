@@ -1,0 +1,3 @@
+# Windicator
+
+Windicator plugin.
