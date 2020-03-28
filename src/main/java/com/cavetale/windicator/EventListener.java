@@ -6,13 +6,17 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.SpawnerSpawnEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
 @RequiredArgsConstructor
@@ -25,23 +29,28 @@ public final class EventListener implements Listener {
         Block block = event.getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
         String name = plugin.windicator.coreAt(block);
-        if (name == null) return;
-        Set<EntityType> types = plugin.windicator.getCoreEntities(name);
-        int count = 0;
-        for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 12)) {
-            EntityType entityType = spawner.getSpawnedType();
-            if (types.contains(entityType)) count += 1;
+        if (name != null) {
+            Set<EntityType> types = plugin.windicator.getCoreEntities(name);
+            int count = 0;
+            for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 12)) {
+                EntityType entityType = spawner.getSpawnedType();
+                if (types.contains(entityType)) count += 1;
+            }
+            if (count > 0) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage(ChatColor.RED
+                                              + "This core is protected by nearby spawners.");
+                return;
+            }
+            plugin.windicator.removeCore(block, name);
+            plugin.windicator.save();
+            event.getPlayer().sendMessage(ChatColor.GREEN
+                                          + "Core block broken.");
         }
-        if (count > 0) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED
-                                          + "This core is protected by nearby spawners.");
-            return;
+        if (block.getType() == Material.SPAWNER) {
+            block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
+                                      new ItemStack(Material.EMERALD));
         }
-        plugin.windicator.removeCore(block, name);
-        plugin.windicator.save();
-        event.getPlayer().sendMessage(ChatColor.GREEN
-                                      + "Core block broken.");
     }
 
     @EventHandler
@@ -73,15 +82,32 @@ public final class EventListener implements Listener {
         if (name == null) return;
         switch (name) {
         case Windicator.WATER:
-            event.getDrops().add(new ItemStack(Material.DIAMOND));
-            break;
         case Windicator.MANSION:
-            event.getDrops().add(new ItemStack(Material.EMERALD));
-            break;
         case Windicator.END:
-            event.getDrops().add(new ItemStack(Material.GOLD_INGOT));
+            event.getDrops().add(new ItemStack(Material.EMERALD,
+                                               1 + plugin.random.nextInt(2)));
             break;
         default: break;
         }
+    }
+
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        for (Entity e : event.getChunk().getEntities()) {
+            if (e.equals(plugin.windicator.boss)
+                || e.equals(plugin.windicator.waterBoss)
+                || e.equals(plugin.windicator.mansionBoss)
+                || e.equals(plugin.windicator.endBoss)) {
+                e.remove();
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerItemDamage(PlayerItemDamageEvent event) {
+        if (!plugin.windicator.isValid()) return;
+        Player player = event.getPlayer();
+        if (!plugin.windicator.isInWorld(player)) return;
+        event.setCancelled(true);
     }
 }

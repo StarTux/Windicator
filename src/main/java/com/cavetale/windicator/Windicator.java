@@ -30,9 +30,9 @@ import org.bukkit.entity.WitherSkeleton;
 public final class Windicator {
     final WindicatorPlugin plugin;
     @Getter private State state;
-    private ElderGuardian waterBoss;
-    private Illusioner mansionBoss;
-    private WitherSkeleton endBoss;
+    ElderGuardian waterBoss;
+    Illusioner mansionBoss;
+    WitherSkeleton endBoss;
     private int waterBossCooldown;
     private int mansionBossCooldown;
     private int endBossCooldown;
@@ -350,5 +350,12 @@ public final class Windicator {
             plugin.getLogger().info("Restoring " + Blocks.toString(block)
                                     + " -> " + data.getAsString());
         }
+    }
+
+    void clearMobs() {
+        if (boss != null) boss.remove();
+        if (waterBoss != null) waterBoss.remove();
+        if (mansionBoss != null) mansionBoss.remove();
+        if (endBoss != null) endBoss.remove();
     }
 }

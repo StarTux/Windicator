@@ -23,6 +23,7 @@ public final class WindicatorPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         windicator.save();
+        windicator.clearMobs();
     }
 
     int rnd(int len) {
