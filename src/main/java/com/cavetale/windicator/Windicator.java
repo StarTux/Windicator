@@ -196,10 +196,18 @@ public final class Windicator {
         Set<EntityType> set = getCoreEntities(name);
         if (set.isEmpty()) return false;
         Block block = origin.getRelative(plugin.rnd(dist),
-                                         plugin.rnd(dist),
+                                         plugin.rnd(dist / 2),
                                          plugin.rnd(dist));
         if (!block.isEmpty() && !block.isLiquid()) return false;
-        for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 8)) {
+        int nbor = 0;
+        if (!block.getRelative(1, 0, 0).isEmpty()) nbor += 1;
+        if (!block.getRelative(-1, 0, 0).isEmpty()) nbor += 1;
+        if (!block.getRelative(0, 0, 1).isEmpty()) nbor += 1;
+        if (!block.getRelative(0, 0, -1).isEmpty()) nbor += 1;
+        if (!block.getRelative(0, 1, 0).isEmpty()) nbor += 1;
+        if (!block.getRelative(0, -1, 0).isEmpty()) nbor += 1;
+        if (nbor == 0) return false;
+        for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 10)) {
             EntityType spawnerType = spawner.getSpawnedType();
             if (set.contains(spawnerType)) return false;
         }
@@ -210,7 +218,8 @@ public final class Windicator {
         spawner.setSpawnedType(entityType);
         spawner.update(true, false);
         plugin.getLogger().info(name + ": created " + entityType
-                                + " spawner at " + Blocks.toString(block));
+                                + " spawner at " + Blocks.toString(block)
+                                + " (" + nbor + ")");
         return true;
     }
 

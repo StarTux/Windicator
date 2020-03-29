@@ -6,9 +6,11 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.entity.Animals;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,7 +34,7 @@ public final class EventListener implements Listener {
         if (name != null) {
             Set<EntityType> types = plugin.windicator.getCoreEntities(name);
             int count = 0;
-            for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 12)) {
+            for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 8)) {
                 EntityType entityType = spawner.getSpawnedType();
                 if (types.contains(entityType)) count += 1;
             }
@@ -49,7 +51,8 @@ public final class EventListener implements Listener {
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
-                                      new ItemStack(Material.EMERALD));
+                                      new ItemStack(Material.EMERALD,
+                                                    2 + 2 * plugin.random.nextInt(5)));
         }
     }
 
@@ -62,7 +65,9 @@ public final class EventListener implements Listener {
         String name = plugin.windicator.coreOf(entityType);
         if (name == null) return;
         if (plugin.windicator.countCoreBlocks(name) == 0) return;
-        plugin.windicator.createNewSpawner(block, name);
+        if (plugin.random.nextInt(3) == 0) {
+            plugin.windicator.createNewSpawner(block, name);
+        }
     }
 
     @EventHandler
@@ -76,18 +81,20 @@ public final class EventListener implements Listener {
             plugin.windicator.save();
             return;
         }
-        event.getDrops().clear();
-        if (entity.getKiller() == null) return;
-        String name = plugin.windicator.coreOf(entity.getType());
-        if (name == null) return;
-        switch (name) {
-        case Windicator.WATER:
-        case Windicator.MANSION:
-        case Windicator.END:
-            event.getDrops().add(new ItemStack(Material.EMERALD,
-                                               1 + plugin.random.nextInt(2)));
-            break;
-        default: break;
+        if (entity instanceof Mob && !(entity instanceof Animals)) {
+            event.getDrops().clear();
+            if (entity.getKiller() == null) return;
+            String name = plugin.windicator.coreOf(entity.getType());
+            if (name == null) return;
+            switch (name) {
+            case Windicator.WATER:
+            case Windicator.MANSION:
+            case Windicator.END:
+                event.getDrops().add(new ItemStack(Material.EMERALD,
+                                                   1 + plugin.random.nextInt(5)));
+                break;
+            default: break;
+            }
         }
     }
 
