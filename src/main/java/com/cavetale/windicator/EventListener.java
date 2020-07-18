@@ -57,7 +57,7 @@ public final class EventListener implements Listener {
     }
 
     @EventHandler
-    public void onSpawnerDpawn(SpawnerSpawnEvent event) {
+    public void onSpawnerSpawn(SpawnerSpawnEvent event) {
         if (!plugin.windicator.isValid()) return;
         Block block = event.getSpawner().getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
