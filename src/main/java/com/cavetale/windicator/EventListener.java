@@ -54,6 +54,13 @@ public final class EventListener implements Listener {
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.random.nextInt(5)));
         }
+        if (block.getType() == Material.IRON_ORE
+            || block.getType() == Material.DIAMOND_ORE
+            || block.getType() == Material.GOLD_ORE
+            || block.getType() == Material.REDSTONE_ORE) {
+            event.setCancelled(true);
+            block.setType(Material.AIR);
+        }
     }
 
     @EventHandler

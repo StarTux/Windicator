@@ -1,5 +1,6 @@
 package com.cavetale.windicator;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -13,6 +14,17 @@ public final class Tick implements Runnable {
 
     @Override
     public void run() {
+        plugin.sidebar.clear();
+        for (String core : Windicator.listCores()) {
+            List<Vec3> list = plugin.windicator.getState().cores.get(core);
+            int count = list != null ? list.size() : 0;
+            plugin.sidebar.newLine(ChatColor.GRAY + core + " " + ChatColor.YELLOW + count);
+        }
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            plugin.sidebar.addPlayer(player);
+        }
+        plugin.sidebar.setTitle(ChatColor.RED + "Cores");
+        plugin.sidebar.update();
         if (!plugin.windicator.isValid()) return;
         World world = plugin.windicator.getWorld();
         if (plugin.windicator.isVictory()) {
@@ -31,6 +43,10 @@ public final class Tick implements Runnable {
                             plugin.windicator.removeCore(block, name);
                             plugin.windicator.save();
                             continue;
+                        } else {
+                            block.getWorld().spawnParticle(org.bukkit.Particle.LAVA,
+                                                           block.getLocation().add(0.5, 1.0, 0.5),
+                                                            8, 0.125, 0.125, 0.125, 0.0);
                         }
                         spawned = plugin.windicator.createNewSpawner(block, name);
                     }

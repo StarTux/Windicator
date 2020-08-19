@@ -11,6 +11,7 @@ public final class WindicatorPlugin extends JavaPlugin {
     final Json json = new Json(this);
     final Random random = ThreadLocalRandom.current();
     final WindicatorCommand command = new WindicatorCommand(this);
+    final Sidebar sidebar = new Sidebar(this);
 
     @Override
     public void onEnable() {

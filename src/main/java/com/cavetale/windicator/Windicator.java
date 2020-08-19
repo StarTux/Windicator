@@ -68,7 +68,7 @@ public final class Windicator {
         return false;
     }
 
-    List<String> listCores() {
+    public static List<String> listCores() {
         return Arrays.asList(WATER, MANSION, END);
     }
 
