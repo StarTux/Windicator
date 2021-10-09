@@ -5,13 +5,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class WindicatorPlugin extends JavaPlugin {
-    final Windicator windicator = new Windicator(this);
-    final EventListener listener = new EventListener(this);
-    final Tick tick = new Tick(this);
-    final Json json = new Json(this);
-    final Random random = ThreadLocalRandom.current();
-    final WindicatorCommand command = new WindicatorCommand(this);
-    final Sidebar sidebar = new Sidebar(this);
+    protected final Windicator windicator = new Windicator(this);
+    protected final EventListener listener = new EventListener(this);
+    protected final Tick tick = new Tick(this);
+    protected final Json json = new Json(this);
+    protected final Random random = ThreadLocalRandom.current();
+    protected final WindicatorCommand command = new WindicatorCommand(this);
 
     @Override
     public void onEnable() {

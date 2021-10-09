@@ -1,8 +1,13 @@
 package com.cavetale.windicator;
 
+import com.cavetale.sidebar.PlayerSidebarEvent;
+import com.cavetale.sidebar.Priority;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
@@ -40,14 +45,13 @@ public final class EventListener implements Listener {
             }
             if (count > 0) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(ChatColor.RED
-                                              + "This core is protected by nearby spawners.");
+                event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners",
+                                                             NamedTextColor.RED));
                 return;
             }
             plugin.windicator.removeCore(block, name);
             plugin.windicator.save();
-            event.getPlayer().sendMessage(ChatColor.GREEN
-                                          + "Core block broken.");
+            event.getPlayer().sendMessage(Component.text("Core block broken", NamedTextColor.GREEN));
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
@@ -123,5 +127,19 @@ public final class EventListener implements Listener {
         Player player = event.getPlayer();
         if (!plugin.windicator.isInWorld(player)) return;
         event.setCancelled(true);
+    }
+
+    @EventHandler
+    protected void onPlayerSidebar(PlayerSidebarEvent event) {
+        if (!plugin.windicator.isValid()) return;
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.text("Cores", NamedTextColor.RED));
+        for (String core : Windicator.listCores()) {
+            List<Vec3> list = plugin.windicator.getState().cores.get(core);
+            int count = list != null ? list.size() : 0;
+            lines.add(Component.text(core, NamedTextColor.GRAY)
+                      .append(Component.text(" " + count, NamedTextColor.YELLOW)));
+        }
+        event.add(plugin, Priority.HIGHEST, lines);
     }
 }

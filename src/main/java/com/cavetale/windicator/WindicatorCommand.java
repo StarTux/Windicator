@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -29,7 +30,7 @@ public final class WindicatorCommand implements TabExecutor {
         try {
             return onCommand(sender, args[0], Arrays.copyOfRange(args, 1, args.length));
         } catch (Wrong w) {
-            sender.sendMessage(ChatColor.RED + w.getMessage());
+            sender.sendMessage(Component.text(w.getMessage(), NamedTextColor.RED));
             return true;
         }
     }
