@@ -12,14 +12,14 @@ import org.bukkit.block.CreatureSpawner;
 public final class Blocks {
     private Blocks() { }
 
-    public static Collection<CreatureSpawner> findNearbySpawners(Block origin, int radius) {
+    public static Collection<CreatureSpawner> findNearbySpawners(Block origin, int radiusX, int radiusY, int radiusZ) {
         final int ox = origin.getX();
         final int oy = origin.getY();
         final int oz = origin.getZ();
-        int ax = (ox - radius) >> 4;
-        int az = (oz - radius) >> 4;
-        int bx = (ox + radius) >> 4;
-        int bz = (oz + radius) >> 4;
+        int ax = (ox - radiusX) >> 4;
+        int az = (oz - radiusZ) >> 4;
+        int bx = (ox + radiusX) >> 4;
+        int bz = (oz + radiusZ) >> 4;
         World world = origin.getWorld();
         List<CreatureSpawner> list = new ArrayList<>();
         for (int cz = az; cz <= bz; cz += 1) {
@@ -29,14 +29,18 @@ public final class Blocks {
                     if (!(state instanceof CreatureSpawner)) continue;
                     Block block = state.getBlock();
                     if (block.equals(origin)) continue;
-                    if (Math.abs(block.getX() - ox) > radius) continue;
-                    if (Math.abs(block.getY() - oy) > radius) continue;
-                    if (Math.abs(block.getZ() - oz) > radius) continue;
+                    if (Math.abs(block.getX() - ox) > radiusX) continue;
+                    if (Math.abs(block.getY() - oy) > radiusY) continue;
+                    if (Math.abs(block.getZ() - oz) > radiusZ) continue;
                     list.add((CreatureSpawner) state);
                 }
             }
         }
         return list;
+    }
+
+    public static Collection<CreatureSpawner> findNearbySpawners(Block origin, int radius) {
+        return findNearbySpawners(origin, radius, radius, radius);
     }
 
     public static String toString(Block block) {

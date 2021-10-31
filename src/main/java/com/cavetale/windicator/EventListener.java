@@ -2,13 +2,17 @@ package com.cavetale.windicator;
 
 import com.cavetale.sidebar.PlayerSidebarEvent;
 import com.cavetale.sidebar.Priority;
+import com.destroystokyo.paper.MaterialTags;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.entity.Animals;
@@ -20,15 +24,34 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.SpawnerSpawnEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 @RequiredArgsConstructor
 public final class EventListener implements Listener {
     final WindicatorPlugin plugin;
+
+    private int countProtectSpawners(Block origin, String name) {
+        int count = 0;
+        Set<EntityType> types = plugin.windicator.getCoreEntities(name);
+        for (CreatureSpawner spawner : Blocks.findNearbySpawners(origin, 10, 4, 10)) {
+            EntityType entityType = spawner.getSpawnedType();
+            if (types.contains(entityType)) {
+                spawner.getWorld().playSound(spawner.getBlock().getLocation(),
+                                             Sound.BLOCK_GLASS_BREAK, SoundCategory.MASTER, 1.0f, 2.0f);
+                count += 1;
+            }
+        }
+        return count;
+    }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
@@ -37,16 +60,12 @@ public final class EventListener implements Listener {
         if (!plugin.windicator.isInWorld(block)) return;
         String name = plugin.windicator.coreAt(block);
         if (name != null) {
-            Set<EntityType> types = plugin.windicator.getCoreEntities(name);
-            int count = 0;
-            for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 8)) {
-                EntityType entityType = spawner.getSpawnedType();
-                if (types.contains(entityType)) count += 1;
-            }
-            if (count > 0) {
+            if (countProtectSpawners(block, name) > 0) {
                 event.setCancelled(true);
                 event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners",
                                                              NamedTextColor.RED));
+                event.getPlayer().sendActionBar(Component.text("This core is protected by nearby spawners",
+                                                               NamedTextColor.RED));
                 return;
             }
             plugin.windicator.removeCore(block, name);
@@ -58,12 +77,21 @@ public final class EventListener implements Listener {
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.random.nextInt(5)));
         }
-        if (block.getType() == Material.IRON_ORE
-            || block.getType() == Material.DIAMOND_ORE
-            || block.getType() == Material.GOLD_ORE
-            || block.getType() == Material.REDSTONE_ORE) {
-            event.setCancelled(true);
-            block.setType(Material.AIR);
+        if (block.getType().name().endsWith("_ORE")) {
+            event.setDropItems(false);
+        }
+    }
+
+    @EventHandler
+    void onBlockDamage(BlockDamageEvent event) {
+        String name = plugin.windicator.coreAt(event.getBlock());
+        if (name == null) return;
+        event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 20 * 30, 0, true, true, true));
+        if (countProtectSpawners(event.getBlock(), name) > 0) {
+            event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners!",
+                                                         NamedTextColor.RED));
+            event.getPlayer().sendActionBar(Component.text("This core is protected by nearby spawners!",
+                                                           NamedTextColor.RED));
         }
     }
 
@@ -138,8 +166,34 @@ public final class EventListener implements Listener {
             List<Vec3> list = plugin.windicator.getState().cores.get(core);
             int count = list != null ? list.size() : 0;
             lines.add(Component.text(core, NamedTextColor.GRAY)
-                      .append(Component.text(" " + count, NamedTextColor.YELLOW)));
+                      .append(Component.text(" " + count, NamedTextColor.GOLD)));
         }
         event.add(plugin, Priority.HIGHEST, lines);
+    }
+
+    @EventHandler
+    protected void onPlayerJoin(PlayerJoinEvent event) {
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                               "ml add " + event.getPlayer().getName());
+    }
+
+    @EventHandler
+    protected void onPrepareItemCraft(PrepareItemCraftEvent event) {
+        ItemStack result = event.getRecipe().getResult();
+        if (result == null) return;
+        Material mat = result.getType();
+        boolean doNull = MaterialTags.HELMETS.isTagged(mat)
+            || MaterialTags.CHESTPLATES.isTagged(mat)
+            || MaterialTags.LEGGINGS.isTagged(mat)
+            || MaterialTags.BOOTS.isTagged(mat)
+            || MaterialTags.SWORDS.isTagged(mat)
+            || MaterialTags.BOWS.isTagged(mat)
+            || MaterialTags.PICKAXES.isTagged(mat)
+            || MaterialTags.SHOVELS.isTagged(mat)
+            || MaterialTags.AXES.isTagged(mat)
+            || mat.name().endsWith("_INGOT");
+        if (doNull) {
+            event.getInventory().setResult(null);
+        }
     }
 }

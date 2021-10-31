@@ -42,7 +42,7 @@ public final class WindicatorCommand implements TabExecutor {
         String cmd = args[0];
         String arg = args[args.length - 1];
         if (args.length == 1) {
-            return complete(cmd, Stream.of("info", "setworld", "setmirror",
+            return complete(cmd, Stream.of("info",
                                            "start", "stop",
                                            "victory",
                                            "addcore", "removecore", "clearcores"));
@@ -78,21 +78,6 @@ public final class WindicatorCommand implements TabExecutor {
             plugin.windicator.setVictory(!plugin.windicator.isVictory());
             plugin.windicator.save();
             sender.sendMessage("Victory set to: " + plugin.windicator.isVictory());
-            return true;
-        }
-        case "setworld": {
-            if (args.length != 0) return false;
-            plugin.windicator.setWorld(playerOf(sender).getWorld());
-            sender.sendMessage("World set to " + plugin.windicator.getWorld().getName());
-            plugin.windicator.save();
-            return true;
-        }
-        case "setmirror": {
-            if (args.length != 0) return false;
-            plugin.windicator.setMirrorWorld(playerOf(sender).getWorld());
-            sender.sendMessage("Mirror world set to "
-                               + plugin.windicator.getMirrorWorld().getName());
-            plugin.windicator.save();
             return true;
         }
         case "addcore": {

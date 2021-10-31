@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,6 +29,8 @@ import org.bukkit.entity.WitherSkeleton;
 
 @RequiredArgsConstructor
 public final class Windicator {
+    public static final String WORLD = "windicator";
+    public static final String MIRROR_WORLD = "windicator_copy";
     final WindicatorPlugin plugin;
     @Getter private State state;
     ElderGuardian waterBoss;
@@ -129,33 +132,23 @@ public final class Windicator {
     }
 
     boolean isInWorld(@NonNull Block block) {
-        return block.getWorld().getName().equals(state.world);
+        return block.getWorld().getName().equals(WORLD);
     }
 
     boolean isInWorld(@NonNull Entity entity) {
-        return entity.getWorld().getName().equals(state.world);
+        return entity.getWorld().getName().equals(WORLD);
     }
 
     boolean isWorld(@NonNull World world) {
-        return world.getName().equals(state.world);
-    }
-
-    void setWorld(World world) {
-        state.world = world.getName();
+        return world.getName().equals(WORLD);
     }
 
     World getWorld() {
-        if (state.world == null) return null;
-        return plugin.getServer().getWorld(state.world);
-    }
-
-    void setMirrorWorld(World world) {
-        state.mirrorWorld = world.getName();
+        return Bukkit.getWorld(WORLD);
     }
 
     World getMirrorWorld() {
-        if (state.mirrorWorld == null) return null;
-        return plugin.getServer().getWorld(state.mirrorWorld);
+        return Bukkit.getWorld(MIRROR_WORLD);
     }
 
     Set<EntityType> getCoreEntities(String name) {
@@ -177,7 +170,6 @@ public final class Windicator {
         case END:
             return EnumSet.of(EntityType.SHULKER,
                               EntityType.ENDERMAN,
-                              EntityType.SHULKER,
                               EntityType.GHAST,
                               EntityType.PHANTOM);
         default: return Collections.emptySet();
@@ -293,7 +285,7 @@ public final class Windicator {
             return;
         }
         if (countCoreBlocks(WATER) > 0) {
-            if (waterBoss == null || !waterBoss.isValid()) {
+            if (waterBoss == null || waterBoss.isDead()) {
                 waterBoss = null;
                 if (waterBossCooldown > 0) {
                     waterBossCooldown -= 1;
@@ -306,7 +298,7 @@ public final class Windicator {
             }
         }
         if (countCoreBlocks(MANSION) > 0) {
-            if (mansionBoss == null || !mansionBoss.isValid()) {
+            if (mansionBoss == null || mansionBoss.isDead()) {
                 mansionBoss = null;
                 if (mansionBossCooldown > 0) {
                     mansionBossCooldown -= 1;
@@ -319,7 +311,7 @@ public final class Windicator {
             }
         }
         if (countCoreBlocks(END) > 0) {
-            if (endBoss == null || !endBoss.isValid()) {
+            if (endBoss == null || endBoss.isDead()) {
                 endBoss = null;
                 if (endBossCooldown > 0) {
                     endBossCooldown -= 1;

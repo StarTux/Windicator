@@ -25,7 +25,7 @@ public final class Tick implements Runnable {
                 }
             }
         } else {
-            if (ticks % 200 == 0) {
+            if (ticks % 100 == 0) {
                 for (String name : plugin.windicator.listCores()) {
                     boolean spawned = false;
                     for (Block block : plugin.windicator.getCoreBlocks(name)) {
