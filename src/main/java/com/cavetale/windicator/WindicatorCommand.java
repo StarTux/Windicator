@@ -91,7 +91,7 @@ public final class WindicatorCommand implements TabExecutor {
                 break;
             default: throw new Wrong("Invalid name: " + name);
             }
-            Block block = player.getTargetBlock(5);
+            Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
             if (!plugin.windicator.addCore(block, name)) {
                 throw new Wrong("Core block already contained.");
@@ -111,7 +111,7 @@ public final class WindicatorCommand implements TabExecutor {
                 break;
             default: throw new Wrong("Invalid name: " + name);
             }
-            Block block = player.getTargetBlock(5);
+            Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
             boolean res = plugin.windicator.removeCore(block, name);
             if (res) {
