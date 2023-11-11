@@ -1,11 +1,13 @@
 package com.cavetale.windicator;
 
+import com.cavetale.core.exploits.PlayerPlacedBlocks;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -46,8 +48,13 @@ public final class Windicator {
     static final String END = "end";
     static final int BOSS_COOLDOWN = 20 * 30;
 
-    void load() {
+    protected void load() {
         state = plugin.json.load(STATE_PATH, State.class, State::new);
+        for (Chunk chunk : getWorld().getLoadedChunks()) {
+            getMirrorWorld().getChunkAtAsync(chunk.getX(), chunk.getZ(), (Consumer<Chunk>) mchunk -> {
+                    mchunk.addPluginChunkTicket(plugin);
+                });
+        }
     }
 
     void save() {
@@ -342,6 +349,7 @@ public final class Windicator {
             if (hi <= 0) continue;
             for (int y = world.getMinHeight(); y <= hi; y += 1) {
                 Block block = world.getBlockAt(x, y, z);
+                if (PlayerPlacedBlocks.isPlayerPlaced(block)) continue;
                 if (block.getType().isSolid()) continue;
                 Block mblock = mirror.getBlockAt(block.getX(),
                                                  block.getY(),

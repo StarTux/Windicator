@@ -6,10 +6,12 @@ import com.destroystokyo.paper.MaterialTags;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
@@ -30,6 +32,7 @@ import org.bukkit.event.entity.SpawnerSpawnEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -138,7 +141,23 @@ public final class EventListener implements Listener {
     }
 
     @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        final Chunk chunk = event.getChunk();
+        if (chunk.getWorld().equals(plugin.windicator.getWorld())) {
+            plugin.windicator.getMirrorWorld().getChunkAtAsync(chunk.getX(), chunk.getZ(), (Consumer<Chunk>) mchunk -> {
+                    mchunk.addPluginChunkTicket(plugin);
+                });
+        }
+    }
+
+    @EventHandler
     public void onChunkUnload(ChunkUnloadEvent event) {
+        final Chunk chunk = event.getChunk();
+        if (chunk.getWorld().equals(plugin.windicator.getWorld())) {
+            plugin.windicator.getMirrorWorld().getChunkAtAsync(chunk.getX(), chunk.getZ(), (Consumer<Chunk>) mchunk -> {
+                    mchunk.removePluginChunkTicket(plugin);
+                });
+        }
         for (Entity e : event.getChunk().getEntities()) {
             if (e.equals(plugin.windicator.boss)
                 || e.equals(plugin.windicator.waterBoss)

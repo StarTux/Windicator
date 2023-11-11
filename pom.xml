@@ -66,6 +66,14 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- COre -->
+    <dependency>
+      <groupId>com.cavetale.core</groupId>
+      <artifactId>core</artifactId>
+      <version>0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Sidebar -->
     <dependency>
       <groupId>com.cavetale.sidebar</groupId>

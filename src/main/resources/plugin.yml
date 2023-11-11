@@ -5,7 +5,7 @@ api-version: '1.20'
 description: Windicator Plugin
 author: StarTux
 website: https://cavetale.com
-depend: [Sidebar]
+depend: [Core, Sidebar]
 softdepend: []
 commands:
   windicator:
