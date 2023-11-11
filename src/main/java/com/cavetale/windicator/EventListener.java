@@ -70,23 +70,27 @@ public final class EventListener implements Listener {
         Block block = event.getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
         CoreType coreType = plugin.windicator.coreAt(block);
+        final Player player = event.getPlayer();
         if (coreType != null) {
             if (countProtectSpawners(block, coreType) > 0) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(text("This core is protected by nearby spawners",
-                                                   RED));
-                event.getPlayer().sendActionBar(text("This core is protected by nearby spawners",
-                                                     RED));
+                player.sendMessage(text("This core is protected by nearby spawners", RED));
+                player.sendActionBar(text("This core is protected by nearby spawners", RED));
                 return;
             }
             plugin.windicator.removeCore(block, coreType);
             plugin.windicator.save();
-            event.getPlayer().sendMessage(text("Core block broken", GREEN));
+            for (Player other : Bukkit.getOnlinePlayers()) {
+                other.sendMessage(text(player.getName() + " broke the " + toCamelCase(" ", coreType) + " core", GREEN));
+            }
+            plugin.getLogger().info(player.getName() + " broke the " + coreType + " core");
+            plugin.windicator.getState().addScore(player.getUniqueId(), 10);
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.random.nextInt(5)));
+            plugin.windicator.getState().addScore(player.getUniqueId(), 5);
         }
         if (block.getType().name().endsWith("_ORE")) {
             event.setDropItems(false);
@@ -138,6 +142,7 @@ public final class EventListener implements Listener {
             if (coreType == null) return;
             event.getDrops().add(new ItemStack(Material.EMERALD,
                                                1 + plugin.random.nextInt(5)));
+            plugin.windicator.getState().addScore(entity.getKiller().getUniqueId(), 1);
         }
     }
 
@@ -192,6 +197,7 @@ public final class EventListener implements Listener {
                                          text(" " + count, GOLD)));
             }
         }
+        lines.add(textOfChildren(text("Score ", DARK_GRAY), text(plugin.windicator.getState().getScore(event.getPlayer().getUniqueId()), YELLOW)));
         event.sidebar(PlayerHudPriority.HIGH, lines);
         event.bossbar(PlayerHudPriority.HIGH, join(separator(space()), lines), BossBar.Color.RED, BossBar.Overlay.PROGRESS, 1.0f);
     }

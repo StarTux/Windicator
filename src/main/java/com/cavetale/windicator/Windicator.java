@@ -30,7 +30,11 @@ import org.bukkit.entity.Mob;
 import org.bukkit.entity.Wither;
 import org.bukkit.entity.WitherSkeleton;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import static com.cavetale.core.util.CamelCase.toCamelCase;
 import static com.cavetale.mytems.util.Collision.collidesWithBlock;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextDecoration.*;
 
 @RequiredArgsConstructor
 public final class Windicator {
@@ -114,7 +118,7 @@ public final class Windicator {
         if (list.isEmpty()) {
             state.cores.remove(coreType.name().toLowerCase());
         }
-        for (BlockDisplay bd : block.getLocation().add(0.5, 0.5, 0.5).getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
+        for (BlockDisplay bd : block.getLocation().getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
             bd.remove();
         }
         return res;
@@ -247,33 +251,21 @@ public final class Windicator {
     }
 
     <T extends Mob> T spawnBoss(CoreType coreType, Class<T> clazz) {
-        int x = 0;
-        int y = 0;
-        int z = 0;
-        int s = 0;
-        for (Vec3 vec : getCores(coreType)) {
-            s += 1;
-            x += vec.getX();
-            y += vec.getY();
-            z += vec.getZ();
-        }
-        x /= s;
-        y /= s;
-        z /= s;
+        List<Vec3> cores = getCores(coreType);
+        if (cores == null || cores.isEmpty()) return null;
+        Vec3 v = cores.get(plugin.random.nextInt(cores.size()));
         World world = getWorld();
         if (world == null) return null;
-        if (!world.isChunkLoaded(x >> 4, z >> 4)) return null;
-        Block origin = getWorld().getBlockAt(x, y, z);
-        Block block = origin.getRelative(plugin.rnd(16),
-                                         plugin.rnd(16),
-                                         plugin.rnd(16));
+        if (!world.isChunkLoaded(v.getX() >> 4, v.getZ() >> 4)) return null;
+        Block origin = world.getBlockAt(v.getX(), v.getY(), v.getZ());
+        Block block = origin.getRelative(plugin.rnd(8), plugin.rnd(8), plugin.rnd(8));
         switch (coreType) {
         case WATER:
             if (!block.isLiquid()) return null;
             break;
         default:
             if (!block.isEmpty()) return null;
-            if (!block.getRelative(0, -1, 0).getType().isSolid()) return null;
+            if (!block.getRelative(0, -1, 0).isSolid()) return null;
             break;
         }
         T result = world.spawn(block.getLocation().add(0.5, 0.0, 0.5), clazz, e -> {
@@ -281,11 +273,18 @@ public final class Windicator {
                 if (e.getHealth() < health) {
                     e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
                     e.setHealth(health);
+                    e.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(10.0);
+                    e.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(1.0);
                 }
                 e.setPersistent(false);
                 e.setRemoveWhenFarAway(true);
+                e.customName(text(toCamelCase(" ", coreType), GOLD, BOLD));
+                e.setCustomNameVisible(true);
+                if (collidesWithBlock(world, e.getBoundingBox())) {
+                    e.remove();
+                }
             });
-        if (result == null) return null;
+        if (result == null || result.isDead()) return null;
         plugin.getLogger().info(coreType + ": spawned " + result.getType()
                                 + " at " + Blocks.toString(block));
         return result;

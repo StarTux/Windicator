@@ -1,5 +1,7 @@
 package com.cavetale.windicator;
 
+import com.cavetale.fam.trophy.Highscore;
+import com.cavetale.mytems.item.trophy.TrophyCategory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,12 +9,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextDecoration.*;
 
 @RequiredArgsConstructor
 public final class WindicatorCommand implements TabExecutor {
@@ -31,7 +35,7 @@ public final class WindicatorCommand implements TabExecutor {
         try {
             return onCommand(sender, args[0], Arrays.copyOfRange(args, 1, args.length));
         } catch (Wrong w) {
-            sender.sendMessage(Component.text(w.getMessage(), NamedTextColor.RED));
+            sender.sendMessage(text(w.getMessage(), RED));
             return true;
         }
     }
@@ -46,7 +50,8 @@ public final class WindicatorCommand implements TabExecutor {
             return complete(cmd, Stream.of("info",
                                            "start", "stop",
                                            "victory",
-                                           "addcore", "removecore", "clearcores"));
+                                           "addcore", "removecore", "clearcores",
+                                           "clearscores", "rewardscores"));
         }
         if (args.length == 2) {
             switch (args[0]) {
@@ -140,6 +145,25 @@ public final class WindicatorCommand implements TabExecutor {
             plugin.windicator.clearCores();
             plugin.windicator.save();
             sender.sendMessage("Cores cleared.");
+            return true;
+        }
+        case "clearscores": {
+            plugin.windicator.getState().scores.clear();
+            sender.sendMessage(text("Scores cleared", YELLOW));
+            return true;
+        }
+        case "rewardscores": {
+            final int count = Highscore.reward(plugin.windicator.getState().scores,
+                                               "windicator",
+                                               TrophyCategory.SWORD,
+                                               text("Windicator", GOLD, BOLD),
+                                               hi -> "You collected " + hi.score + " point" + (hi.score == 1 ? "" : "s"));
+            List<Highscore> highscore = Highscore.of(plugin.windicator.getState().scores);
+            List<Component> highscoreLines = Highscore.sidebar(highscore, TrophyCategory.SWORD);
+            for (Component line : highscoreLines) {
+                sender.sendMessage(line);
+            }
+            sender.sendMessage(text(count + " players rewarded", YELLOW));
             return true;
         }
         default:

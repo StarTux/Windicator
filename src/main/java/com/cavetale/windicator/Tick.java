@@ -46,19 +46,19 @@ public final class Tick implements Runnable {
                         }
                         spawned = plugin.windicator.createNewSpawner(block, coreType);
                     }
-                    plugin.windicator.respawnBosses();
                 }
             }
+            plugin.windicator.respawnBosses();
             if (ticks % 10 == 0) plugin.windicator.spawnAll();
             plugin.windicator.regen();
             final double time = (double) ticks * 0.2;
-            final float dy = (float) (Math.sin(time) * 0.1);
+            final float dy = (float) (Math.sin(time) * 0.05);
             for (CoreType coreType : CoreType.values()) {
                 for (Block block : plugin.windicator.getCoreBlocks(coreType)) {
                     boolean hasOutline = false;
-                    final Location location = block.getLocation().add(-0.05, -0.05, -0.05);
+                    final Location location = block.getLocation();
                     for (BlockDisplay bd : location.getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
-                        bd.setTransformation(new Transformation(new Vector3f(0f, dy, 0f),
+                        bd.setTransformation(new Transformation(new Vector3f(-0.05f, -0.05f + dy, -0.05f),
                                                                 new AxisAngle4f(0f, 0f, 0f, 0f),
                                                                 new Vector3f(1.1f, 1.1f, 1.1f),
                                                                 new AxisAngle4f(0f, 0f, 0f, 0f)));
