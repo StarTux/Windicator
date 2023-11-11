@@ -18,8 +18,10 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.ElderGuardian;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -27,6 +29,8 @@ import org.bukkit.entity.Illusioner;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Wither;
 import org.bukkit.entity.WitherSkeleton;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import static com.cavetale.mytems.util.Collision.collidesWithBlock;
 
 @RequiredArgsConstructor
 public final class Windicator {
@@ -50,6 +54,16 @@ public final class Windicator {
             getMirrorWorld().getChunkAtAsync(chunk.getX(), chunk.getZ(), (Consumer<Chunk>) mchunk -> {
                     mchunk.addPluginChunkTicket(plugin);
                 });
+        }
+    }
+
+    protected void disable() {
+        for (CoreType coreType : CoreType.values()) {
+            for (Block block : plugin.windicator.getCoreBlocks(coreType)) {
+                for (BlockDisplay bd : block.getLocation().getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
+                    bd.remove();
+                }
+            }
         }
     }
 
@@ -82,7 +96,7 @@ public final class Windicator {
     }
 
     boolean addCore(Block block, CoreType coreType) {
-        List<Vec3> list = getCores(coreType);
+        List<Vec3> list = state.cores.get(coreType.name().toLowerCase());
         if (list == null) {
             list = new ArrayList<>();
             state.cores.put(coreType.name().toLowerCase(), list);
@@ -99,6 +113,9 @@ public final class Windicator {
         boolean res = list.remove(Vec3.of(block));
         if (list.isEmpty()) {
             state.cores.remove(coreType.name().toLowerCase());
+        }
+        for (BlockDisplay bd : block.getLocation().add(0.5, 0.5, 0.5).getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
+            bd.remove();
         }
         return res;
     }
@@ -191,12 +208,19 @@ public final class Windicator {
                                          plugin.rnd(dist));
         if (!block.isEmpty() && !block.isLiquid()) return false;
         int nbor = 0;
-        if (!block.getRelative(1, 0, 0).isEmpty()) nbor += 1;
-        if (!block.getRelative(-1, 0, 0).isEmpty()) nbor += 1;
-        if (!block.getRelative(0, 0, 1).isEmpty()) nbor += 1;
-        if (!block.getRelative(0, 0, -1).isEmpty()) nbor += 1;
-        if (!block.getRelative(0, 1, 0).isEmpty()) nbor += 1;
-        if (!block.getRelative(0, -1, 0).isEmpty()) nbor += 1;
+        final int radius = 2;
+        for (int dy = -radius; dy <= radius; dy += 1) {
+            for (int dz = -radius; dz <= radius; dz += 1) {
+                for (int dx = -radius; dx <= radius; dx += 1) {
+                    Block rel = block.getRelative(dx, dy, dz);
+                    switch (rel.getType()) {
+                    case LIGHT: case AIR: case SPAWNER: continue;
+                    default: break;
+                    }
+                    if (!rel.isEmpty()) nbor += 1;
+                }
+            }
+        }
         if (nbor == 0) return false;
         for (CreatureSpawner spawner : Blocks.findNearbySpawners(block, 10)) {
             EntityType spawnerType = spawner.getSpawnedType();
@@ -222,7 +246,7 @@ public final class Windicator {
         state.victory = victory;
     }
 
-    <T extends Mob> T spawn(CoreType coreType, Class<T> clazz) {
+    <T extends Mob> T spawnBoss(CoreType coreType, Class<T> clazz) {
         int x = 0;
         int y = 0;
         int z = 0;
@@ -252,21 +276,22 @@ public final class Windicator {
             if (!block.getRelative(0, -1, 0).getType().isSolid()) return null;
             break;
         }
-        T result = world.spawn(block.getLocation().add(0.5, 0.0, 0.5), clazz);
-        final double health = 100.0;
-        if (result.getHealth() < health) {
-            result.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
-            result.setHealth(health);
-        }
-        result.setPersistent(false);
-        result.setRemoveWhenFarAway(true);
+        T result = world.spawn(block.getLocation().add(0.5, 0.0, 0.5), clazz, e -> {
+                final double health = 100.0;
+                if (e.getHealth() < health) {
+                    e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
+                    e.setHealth(health);
+                }
+                e.setPersistent(false);
+                e.setRemoveWhenFarAway(true);
+            });
         if (result == null) return null;
         plugin.getLogger().info(coreType + ": spawned " + result.getType()
                                 + " at " + Blocks.toString(block));
         return result;
     }
 
-    void respawn() {
+    void respawnBosses() {
         if (state.cores.isEmpty()) {
             if (boss == null || !boss.isValid()) {
                 boss = null;
@@ -289,7 +314,7 @@ public final class Windicator {
                 if (waterBossCooldown > 0) {
                     waterBossCooldown -= 1;
                 } else {
-                    waterBoss = spawn(CoreType.WATER, ElderGuardian.class);
+                    waterBoss = spawnBoss(CoreType.WATER, ElderGuardian.class);
                     if (waterBoss != null) {
                         waterBossCooldown = BOSS_COOLDOWN;
                     }
@@ -302,7 +327,7 @@ public final class Windicator {
                 if (mansionBossCooldown > 0) {
                     mansionBossCooldown -= 1;
                 } else {
-                    mansionBoss = spawn(CoreType.MANSION, Illusioner.class);
+                    mansionBoss = spawnBoss(CoreType.MANSION, Illusioner.class);
                     if (mansionBoss != null) {
                         mansionBossCooldown = BOSS_COOLDOWN;
                     }
@@ -315,7 +340,7 @@ public final class Windicator {
                 if (endBossCooldown > 0) {
                     endBossCooldown -= 1;
                 } else {
-                    endBoss = spawn(CoreType.END, WitherSkeleton.class);
+                    endBoss = spawnBoss(CoreType.END, WitherSkeleton.class);
                     if (endBoss != null) {
                         endBossCooldown = BOSS_COOLDOWN;
                     }
@@ -353,6 +378,48 @@ public final class Windicator {
                 if (data.equals(block.getBlockData())) continue;
                 block.setBlockData(data, false);
                 return;
+            }
+        }
+    }
+
+    /**
+     * Try to spawn mobs from any spawner in the world.
+     * Called regularly by Tick.
+     */
+    protected void spawnAll() {
+        World world = getWorld();
+        World mirror = getMirrorWorld();
+        if (world == null || mirror == null) return;
+        int inx = plugin.random.nextInt(16);
+        int inz = plugin.random.nextInt(16);
+        List<Chunk> chunks = new ArrayList<>();
+        for (Chunk chunk : world.getLoadedChunks()) chunks.add(chunk);
+        Collections.shuffle(chunks, plugin.random);
+        for (Chunk chunk : chunks) {
+            if (chunk.getLoadLevel() != Chunk.LoadLevel.ENTITY_TICKING) continue;
+            for (BlockState blockState : chunk.getTileEntities()) {
+                if (!(blockState instanceof CreatureSpawner spawner)) continue;
+                EntityType entityType = spawner.getSpawnedType();
+                if (entityType == null) continue;
+                int nearbyCount = 0;
+                for (Entity nearby : blockState.getBlock().getLocation().getNearbyEntitiesByType(entityType.getEntityClass(), 8.0, 8.0, 8.0)) {
+                    if (nearby.getType() == entityType) nearbyCount += 1;
+                }
+                if (nearbyCount > 3) continue;
+                for (int i = 0; i < 10; i += 1) {
+                    Block spawnBlock = blockState.getBlock().getRelative(plugin.rnd(8), plugin.rnd(8), plugin.rnd(8));
+                    Location spawnLocation = spawnBlock.getLocation().add(0.5, 0.0, 0.5);
+                    Entity entity = spawnLocation.getWorld().spawnEntity(spawnLocation, entityType, SpawnReason.SPAWNER, e -> {
+                            e.setPersistent(false);
+                            if (e instanceof Mob mob) {
+                                mob.setRemoveWhenFarAway(true);
+                            }
+                            if (collidesWithBlock(spawnLocation.getWorld(), e.getBoundingBox())) {
+                                e.remove();
+                            }
+                        });
+                    if (entity != null && !entity.isDead()) return;
+                }
             }
         }
     }
