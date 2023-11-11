@@ -26,11 +26,11 @@ public final class Tick implements Runnable {
             }
         } else {
             if (ticks % 100 == 0) {
-                for (String name : plugin.windicator.listCores()) {
+                for (CoreType coreType : CoreType.values()) {
                     boolean spawned = false;
-                    for (Block block : plugin.windicator.getCoreBlocks(name)) {
+                    for (Block block : plugin.windicator.getCoreBlocks(coreType)) {
                         if (!block.getType().isSolid()) {
-                            plugin.windicator.removeCore(block, name);
+                            plugin.windicator.removeCore(block, coreType);
                             plugin.windicator.save();
                             continue;
                         } else {
@@ -38,7 +38,7 @@ public final class Tick implements Runnable {
                                                            block.getLocation().add(0.5, 1.0, 0.5),
                                                            8, 0.125, 0.125, 0.125, 0.0);
                         }
-                        spawned = plugin.windicator.createNewSpawner(block, name);
+                        spawned = plugin.windicator.createNewSpawner(block, coreType);
                     }
                     plugin.windicator.respawn();
                 }

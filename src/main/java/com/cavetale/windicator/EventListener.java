@@ -1,7 +1,7 @@
 package com.cavetale.windicator;
 
-import com.cavetale.sidebar.PlayerSidebarEvent;
-import com.cavetale.sidebar.Priority;
+import com.cavetale.core.event.hud.PlayerHudEvent;
+import com.cavetale.core.event.hud.PlayerHudPriority;
 import com.destroystokyo.paper.MaterialTags;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,14 +37,15 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import static com.cavetale.core.util.CamelCase.toCamelCase;
 
 @RequiredArgsConstructor
 public final class EventListener implements Listener {
     final WindicatorPlugin plugin;
 
-    private int countProtectSpawners(Block origin, String name) {
+    private int countProtectSpawners(Block origin, CoreType coreType) {
         int count = 0;
-        Set<EntityType> types = plugin.windicator.getCoreEntities(name);
+        Set<EntityType> types = plugin.windicator.getCoreEntities(coreType);
         for (CreatureSpawner spawner : Blocks.findNearbySpawners(origin, 10, 4, 10)) {
             EntityType entityType = spawner.getSpawnedType();
             if (types.contains(entityType)) {
@@ -61,9 +62,9 @@ public final class EventListener implements Listener {
         if (!plugin.windicator.isValid()) return;
         Block block = event.getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
-        String name = plugin.windicator.coreAt(block);
-        if (name != null) {
-            if (countProtectSpawners(block, name) > 0) {
+        CoreType coreType = plugin.windicator.coreAt(block);
+        if (coreType != null) {
+            if (countProtectSpawners(block, coreType) > 0) {
                 event.setCancelled(true);
                 event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners",
                                                              NamedTextColor.RED));
@@ -71,7 +72,7 @@ public final class EventListener implements Listener {
                                                                NamedTextColor.RED));
                 return;
             }
-            plugin.windicator.removeCore(block, name);
+            plugin.windicator.removeCore(block, coreType);
             plugin.windicator.save();
             event.getPlayer().sendMessage(Component.text("Core block broken", NamedTextColor.GREEN));
         }
@@ -87,10 +88,10 @@ public final class EventListener implements Listener {
 
     @EventHandler
     void onBlockDamage(BlockDamageEvent event) {
-        String name = plugin.windicator.coreAt(event.getBlock());
-        if (name == null) return;
+        CoreType coreType = plugin.windicator.coreAt(event.getBlock());
+        if (coreType == null) return;
         event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 20 * 30, 0, true, true, true));
-        if (countProtectSpawners(event.getBlock(), name) > 0) {
+        if (countProtectSpawners(event.getBlock(), coreType) > 0) {
             event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners!",
                                                          NamedTextColor.RED));
             event.getPlayer().sendActionBar(Component.text("This core is protected by nearby spawners!",
@@ -104,11 +105,11 @@ public final class EventListener implements Listener {
         Block block = event.getSpawner().getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
         EntityType entityType = event.getEntity().getType();
-        String name = plugin.windicator.coreOf(entityType);
-        if (name == null) return;
-        if (plugin.windicator.countCoreBlocks(name) == 0) return;
+        CoreType coreType = plugin.windicator.coreOf(entityType);
+        if (coreType == null) return;
+        if (plugin.windicator.countCoreBlocks(coreType) == 0) return;
         if (plugin.random.nextInt(3) == 0) {
-            plugin.windicator.createNewSpawner(block, name);
+            plugin.windicator.createNewSpawner(block, coreType);
         }
     }
 
@@ -126,17 +127,10 @@ public final class EventListener implements Listener {
         if (entity instanceof Mob && !(entity instanceof Animals)) {
             event.getDrops().clear();
             if (entity.getKiller() == null) return;
-            String name = plugin.windicator.coreOf(entity.getType());
-            if (name == null) return;
-            switch (name) {
-            case Windicator.WATER:
-            case Windicator.MANSION:
-            case Windicator.END:
-                event.getDrops().add(new ItemStack(Material.EMERALD,
-                                                   1 + plugin.random.nextInt(5)));
-                break;
-            default: break;
-            }
+            CoreType coreType = plugin.windicator.coreOf(entity.getType());
+            if (coreType == null) return;
+            event.getDrops().add(new ItemStack(Material.EMERALD,
+                                               1 + plugin.random.nextInt(5)));
         }
     }
 
@@ -177,17 +171,17 @@ public final class EventListener implements Listener {
     }
 
     @EventHandler
-    protected void onPlayerSidebar(PlayerSidebarEvent event) {
+    protected void onPlayerHud(PlayerHudEvent event) {
         if (!plugin.windicator.isValid()) return;
         List<Component> lines = new ArrayList<>();
         lines.add(Component.text("Cores", NamedTextColor.RED));
-        for (String core : Windicator.listCores()) {
-            List<Vec3> list = plugin.windicator.getState().cores.get(core);
+        for (CoreType core : CoreType.values()) {
+            List<Vec3> list = plugin.windicator.getCores(core);
             int count = list != null ? list.size() : 0;
-            lines.add(Component.text(core, NamedTextColor.GRAY)
+            lines.add(Component.text(toCamelCase(" ", core), NamedTextColor.GRAY)
                       .append(Component.text(" " + count, NamedTextColor.GOLD)));
         }
-        event.add(plugin, Priority.HIGHEST, lines);
+        event.sidebar(PlayerHudPriority.HIGH, lines);
     }
 
     @EventHandler

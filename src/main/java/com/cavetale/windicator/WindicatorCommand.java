@@ -1,5 +1,6 @@
 package com.cavetale.windicator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,7 +48,21 @@ public final class WindicatorCommand implements TabExecutor {
                                            "victory",
                                            "addcore", "removecore", "clearcores"));
         }
-        return null;
+        if (args.length == 2) {
+            switch (args[0]) {
+            case "addcore": case "removecore": {
+                final String lower = args[1].toLowerCase();
+                List<String> result = new ArrayList<>();
+                for (CoreType coreType : CoreType.values()) {
+                    final String name = coreType.name().toLowerCase();
+                    if (name.contains(lower)) result.add(name);
+                }
+                return result;
+            }
+            default: break;
+            }
+        }
+        return List.of();
     }
 
     boolean onCommand(CommandSender sender, String cmd, String[] args) throws Wrong {
@@ -84,39 +99,37 @@ public final class WindicatorCommand implements TabExecutor {
             if (args.length != 1) return false;
             Player player = playerOf(sender);
             String name = args[0];
-            switch (name) {
-            case Windicator.WATER:
-            case Windicator.MANSION:
-            case Windicator.END:
-                break;
-            default: throw new Wrong("Invalid name: " + name);
+            final CoreType coreType;
+            try {
+                coreType = CoreType.valueOf(name.toUpperCase());
+            } catch (IllegalArgumentException iae) {
+                throw new Wrong("Unknown core type: " + name);
             }
             Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
-            if (!plugin.windicator.addCore(block, name)) {
+            if (!plugin.windicator.addCore(block, coreType)) {
                 throw new Wrong("Core block already contained.");
             }
             plugin.windicator.save();
-            sender.sendMessage("Core block added: " + name + ": " + Vec3.of(block));
+            sender.sendMessage("Core block added: " + coreType + ": " + Vec3.of(block));
             return true;
         }
         case "removecore": {
             if (args.length != 1) return false;
             Player player = playerOf(sender);
             String name = args[0];
-            switch (name) {
-            case Windicator.WATER:
-            case Windicator.MANSION:
-            case Windicator.END:
-                break;
-            default: throw new Wrong("Invalid name: " + name);
+            final CoreType coreType;
+            try {
+                coreType = CoreType.valueOf(name.toUpperCase());
+            } catch (IllegalArgumentException iae) {
+                throw new Wrong("Unknown core type: " + name);
             }
             Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
-            boolean res = plugin.windicator.removeCore(block, name);
+            boolean res = plugin.windicator.removeCore(block, coreType);
             if (res) {
                 plugin.windicator.save();
-                sender.sendMessage("Core block removed: " + name + ": " + Vec3.of(block));
+                sender.sendMessage("Core block removed: " + coreType + ": " + Vec3.of(block));
             } else {
                 throw new Wrong("Not a core block: " + Vec3.of(block));
             }
