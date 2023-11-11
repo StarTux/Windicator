@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -38,6 +38,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import static com.cavetale.core.util.CamelCase.toCamelCase;
+import static net.kyori.adventure.text.Component.join;
+import static net.kyori.adventure.text.Component.space;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.Component.textOfChildren;
+import static net.kyori.adventure.text.JoinConfiguration.separator;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextDecoration.*;
 
 @RequiredArgsConstructor
 public final class EventListener implements Listener {
@@ -66,15 +73,15 @@ public final class EventListener implements Listener {
         if (coreType != null) {
             if (countProtectSpawners(block, coreType) > 0) {
                 event.setCancelled(true);
-                event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners",
-                                                             NamedTextColor.RED));
-                event.getPlayer().sendActionBar(Component.text("This core is protected by nearby spawners",
-                                                               NamedTextColor.RED));
+                event.getPlayer().sendMessage(text("This core is protected by nearby spawners",
+                                                   RED));
+                event.getPlayer().sendActionBar(text("This core is protected by nearby spawners",
+                                                     RED));
                 return;
             }
             plugin.windicator.removeCore(block, coreType);
             plugin.windicator.save();
-            event.getPlayer().sendMessage(Component.text("Core block broken", NamedTextColor.GREEN));
+            event.getPlayer().sendMessage(text("Core block broken", GREEN));
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
@@ -92,10 +99,10 @@ public final class EventListener implements Listener {
         if (coreType == null) return;
         event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 20 * 30, 0, true, true, true));
         if (countProtectSpawners(event.getBlock(), coreType) > 0) {
-            event.getPlayer().sendMessage(Component.text("This core is protected by nearby spawners!",
-                                                         NamedTextColor.RED));
-            event.getPlayer().sendActionBar(Component.text("This core is protected by nearby spawners!",
-                                                           NamedTextColor.RED));
+            event.getPlayer().sendMessage(text("This core is protected by nearby spawners!",
+                                               RED));
+            event.getPlayer().sendActionBar(text("This core is protected by nearby spawners!",
+                                                 RED));
         }
     }
 
@@ -174,14 +181,19 @@ public final class EventListener implements Listener {
     protected void onPlayerHud(PlayerHudEvent event) {
         if (!plugin.windicator.isValid()) return;
         List<Component> lines = new ArrayList<>();
-        lines.add(Component.text("Cores", NamedTextColor.RED));
+        lines.add(text("Windicator", GOLD, BOLD));
         for (CoreType core : CoreType.values()) {
             List<Vec3> list = plugin.windicator.getCores(core);
             int count = list != null ? list.size() : 0;
-            lines.add(Component.text(toCamelCase(" ", core), NamedTextColor.GRAY)
-                      .append(Component.text(" " + count, NamedTextColor.GOLD)));
+            if (count == 0) {
+                lines.add(text(toCamelCase(" ", core), DARK_GRAY, STRIKETHROUGH));
+            } else {
+                lines.add(textOfChildren(text(toCamelCase(" ", core), GRAY),
+                                         text(" " + count, GOLD)));
+            }
         }
         event.sidebar(PlayerHudPriority.HIGH, lines);
+        event.bossbar(PlayerHudPriority.HIGH, join(separator(space()), lines), BossBar.Color.RED, BossBar.Overlay.PROGRESS, 1.0f);
     }
 
     @EventHandler
@@ -192,6 +204,7 @@ public final class EventListener implements Listener {
 
     @EventHandler
     protected void onPrepareItemCraft(PrepareItemCraftEvent event) {
+        if (event.getRecipe() == null) return;
         ItemStack result = event.getRecipe().getResult();
         if (result == null) return;
         Material mat = result.getType();
