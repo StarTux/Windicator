@@ -149,6 +149,7 @@ public final class WindicatorCommand implements TabExecutor {
         }
         case "clearscores": {
             plugin.windicator.getState().scores.clear();
+            plugin.windicator.computeHighscore();
             sender.sendMessage(text("Scores cleared", YELLOW));
             return true;
         }

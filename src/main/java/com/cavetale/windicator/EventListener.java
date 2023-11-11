@@ -66,7 +66,7 @@ public final class EventListener implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        if (!plugin.windicator.isValid()) return;
+        if (!plugin.windicator.isPlaying()) return;
         Block block = event.getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
         CoreType coreType = plugin.windicator.coreAt(block);
@@ -81,16 +81,16 @@ public final class EventListener implements Listener {
             plugin.windicator.removeCore(block, coreType);
             plugin.windicator.save();
             for (Player other : Bukkit.getOnlinePlayers()) {
-                other.sendMessage(text(player.getName() + " broke the " + toCamelCase(" ", coreType) + " core", GREEN));
+                other.sendMessage(text(player.getName() + " broke the " + toCamelCase(" ", coreType) + " core", GOLD));
             }
             plugin.getLogger().info(player.getName() + " broke the " + coreType + " core");
-            plugin.windicator.getState().addScore(player.getUniqueId(), 10);
+            plugin.windicator.addScore(player, 10);
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.random.nextInt(5)));
-            plugin.windicator.getState().addScore(player.getUniqueId(), 5);
+            plugin.windicator.addScore(player, 5);
         }
         if (block.getType().name().endsWith("_ORE")) {
             event.setDropItems(false);
@@ -112,7 +112,7 @@ public final class EventListener implements Listener {
 
     @EventHandler
     public void onSpawnerSpawn(SpawnerSpawnEvent event) {
-        if (!plugin.windicator.isValid()) return;
+        if (!plugin.windicator.isPlaying()) return;
         Block block = event.getSpawner().getBlock();
         if (!plugin.windicator.isInWorld(block)) return;
         EntityType entityType = event.getEntity().getType();
@@ -126,7 +126,7 @@ public final class EventListener implements Listener {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        if (!plugin.windicator.isValid()) return;
+        if (!plugin.windicator.isPlaying()) return;
         LivingEntity entity = event.getEntity();
         if (!plugin.windicator.isInWorld(entity)) return;
         // Wither boss
@@ -149,7 +149,7 @@ public final class EventListener implements Listener {
             if (coreType == null) return;
             event.getDrops().add(new ItemStack(Material.EMERALD,
                                                1 + plugin.random.nextInt(5)));
-            plugin.windicator.getState().addScore(entity.getKiller().getUniqueId(), 1);
+            plugin.windicator.addScore(entity.getKiller(), 1);
         }
     }
 
@@ -183,7 +183,6 @@ public final class EventListener implements Listener {
 
     @EventHandler
     public void onPlayerItemDamage(PlayerItemDamageEvent event) {
-        if (!plugin.windicator.isValid()) return;
         Player player = event.getPlayer();
         if (!plugin.windicator.isInWorld(player)) return;
         event.setCancelled(true);
@@ -205,8 +204,11 @@ public final class EventListener implements Listener {
             }
         }
         lines.add(textOfChildren(text("Score ", DARK_GRAY), text(plugin.windicator.getState().getScore(event.getPlayer().getUniqueId()), YELLOW)));
-        event.sidebar(PlayerHudPriority.HIGH, lines);
         event.bossbar(PlayerHudPriority.HIGH, join(separator(space()), lines), BossBar.Color.RED, BossBar.Overlay.PROGRESS, 1.0f);
+        if (plugin.windicator.isVictory()) {
+            lines.addAll(plugin.windicator.highscoreLines);
+        }
+        event.sidebar(PlayerHudPriority.HIGH, lines);
     }
 
     @EventHandler

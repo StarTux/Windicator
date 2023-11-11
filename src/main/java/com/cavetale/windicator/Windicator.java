@@ -1,6 +1,8 @@
 package com.cavetale.windicator;
 
 import com.cavetale.core.exploits.PlayerPlacedBlocks;
+import com.cavetale.fam.trophy.Highscore;
+import com.cavetale.mytems.item.trophy.TrophyCategory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -11,6 +13,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -27,6 +30,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Illusioner;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Wither;
 import org.bukkit.entity.WitherSkeleton;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
@@ -51,6 +55,8 @@ public final class Windicator {
     Wither boss = null;
     static final String STATE_PATH = "state.json";
     static final int BOSS_COOLDOWN = 20 * 60;
+    protected List<Highscore> highscore = List.of();
+    protected List<Component> highscoreLines = List.of();
 
     protected void load() {
         state = plugin.json.load(STATE_PATH, State.class, State::new);
@@ -59,6 +65,7 @@ public final class Windicator {
                     mchunk.addPluginChunkTicket(plugin);
                 });
         }
+        computeHighscore();
     }
 
     protected void disable() {
@@ -77,6 +84,10 @@ public final class Windicator {
 
     boolean isValid() {
         return state != null && state.isValid();
+    }
+
+    public boolean isPlaying() {
+        return state != null && state.enabled && !state.victory;
     }
 
     void setEnabled(boolean enabled) {
@@ -419,5 +430,15 @@ public final class Windicator {
         if (waterBoss != null) waterBoss.remove();
         if (mansionBoss != null) mansionBoss.remove();
         if (endBoss != null) endBoss.remove();
+    }
+
+    protected void addScore(Player player, int value) {
+        state.addScore(player.getUniqueId(), value);
+        computeHighscore();
+    }
+
+    protected void computeHighscore() {
+        highscore = Highscore.of(plugin.windicator.getState().scores);
+        highscoreLines = Highscore.sidebar(highscore, TrophyCategory.SWORD);
     }
 }

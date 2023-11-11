@@ -24,10 +24,10 @@ public final class Tick implements Runnable {
         if (!plugin.windicator.isValid()) return;
         World world = plugin.windicator.getWorld();
         if (plugin.windicator.isVictory()) {
-            if (ticks % 20 == 0) {
+            if (ticks % 100 == 0) {
                 for (Player player : plugin.windicator.getWorld().getPlayers()) {
-                    player.showTitle(Title.title(Component.text("Victory", NamedTextColor.GREEN),
-                                                 Component.text("Windicator", NamedTextColor.GREEN)));
+                    player.showTitle(Title.title(Component.text("Victory", NamedTextColor.GOLD),
+                                                 Component.text("Windicator", NamedTextColor.GOLD)));
                 }
             }
         } else {
