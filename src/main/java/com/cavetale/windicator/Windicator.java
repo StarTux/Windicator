@@ -403,7 +403,7 @@ public final class Windicator {
                 EntityType entityType = spawner.getSpawnedType();
                 if (entityType == null) continue;
                 int nearbyCount = 0;
-                for (Entity nearby : blockState.getBlock().getLocation().getNearbyEntitiesByType(entityType.getEntityClass(), 8.0, 8.0, 8.0)) {
+                for (Entity nearby : blockState.getBlock().getLocation().getNearbyEntitiesByType(entityType.getEntityClass(), 12.0, 32.0, 12.0)) {
                     if (nearby.getType() == entityType) nearbyCount += 1;
                 }
                 if (nearbyCount > 3) continue;

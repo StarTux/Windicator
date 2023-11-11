@@ -2,6 +2,7 @@ package com.cavetale.windicator;
 
 import com.cavetale.core.event.hud.PlayerHudEvent;
 import com.cavetale.core.event.hud.PlayerHudPriority;
+import com.cavetale.mytems.Mytems;
 import com.destroystokyo.paper.MaterialTags;
 import java.util.ArrayList;
 import java.util.List;
@@ -213,8 +214,15 @@ public final class EventListener implements Listener {
 
     @EventHandler
     protected void onPlayerJoin(PlayerJoinEvent event) {
+        final Player player = event.getPlayer();
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                               "ml add " + event.getPlayer().getName());
+                               "ml add " + player.getName());
+        if (!player.hasPlayedBefore()) {
+            player.getInventory().addItem(new ItemStack(Material.WOODEN_SWORD));
+            player.getInventory().addItem(Mytems.ORANGE_CANDY.createItemStack());
+            player.getInventory().addItem(Mytems.CANDY_CORN.createItemStack());
+            player.getInventory().addItem(Mytems.CHOCOLATE_BAR.createItemStack());
+        }
     }
 
     @EventHandler
@@ -232,7 +240,8 @@ public final class EventListener implements Listener {
             || MaterialTags.PICKAXES.isTagged(mat)
             || MaterialTags.SHOVELS.isTagged(mat)
             || MaterialTags.AXES.isTagged(mat)
-            || mat.name().endsWith("_INGOT");
+            || mat.name().endsWith("_INGOT")
+            || mat == Material.BREAD;
         if (doNull) {
             event.getInventory().setResult(null);
         }
