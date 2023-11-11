@@ -45,12 +45,12 @@ public final class Windicator {
     ElderGuardian waterBoss;
     Illusioner mansionBoss;
     WitherSkeleton endBoss;
-    private int waterBossCooldown;
-    private int mansionBossCooldown;
-    private int endBossCooldown;
+    protected int waterBossCooldown;
+    protected int mansionBossCooldown;
+    protected int endBossCooldown;
     Wither boss = null;
     static final String STATE_PATH = "state.json";
-    static final int BOSS_COOLDOWN = 20 * 30;
+    static final int BOSS_COOLDOWN = 20 * 60;
 
     protected void load() {
         state = plugin.json.load(STATE_PATH, State.class, State::new);
@@ -277,7 +277,7 @@ public final class Windicator {
                     e.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(1.0);
                 }
                 e.setPersistent(false);
-                e.setRemoveWhenFarAway(true);
+                e.setRemoveWhenFarAway(false);
                 e.customName(text(toCamelCase(" ", coreType), GOLD, BOLD));
                 e.setCustomNameVisible(true);
                 if (collidesWithBlock(world, e.getBoundingBox())) {
@@ -314,9 +314,6 @@ public final class Windicator {
                     waterBossCooldown -= 1;
                 } else {
                     waterBoss = spawnBoss(CoreType.WATER, ElderGuardian.class);
-                    if (waterBoss != null) {
-                        waterBossCooldown = BOSS_COOLDOWN;
-                    }
                 }
             }
         }
@@ -327,9 +324,6 @@ public final class Windicator {
                     mansionBossCooldown -= 1;
                 } else {
                     mansionBoss = spawnBoss(CoreType.MANSION, Illusioner.class);
-                    if (mansionBoss != null) {
-                        mansionBossCooldown = BOSS_COOLDOWN;
-                    }
                 }
             }
         }
@@ -340,9 +334,6 @@ public final class Windicator {
                     endBossCooldown -= 1;
                 } else {
                     endBoss = spawnBoss(CoreType.END, WitherSkeleton.class);
-                    if (endBoss != null) {
-                        endBossCooldown = BOSS_COOLDOWN;
-                    }
                 }
             }
         }

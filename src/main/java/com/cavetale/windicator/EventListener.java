@@ -135,6 +135,13 @@ public final class EventListener implements Listener {
             plugin.windicator.save();
             return;
         }
+        if (entity.equals(plugin.windicator.waterBoss)) {
+            plugin.windicator.waterBossCooldown = plugin.windicator.BOSS_COOLDOWN;
+        } else if (entity.equals(plugin.windicator.mansionBoss)) {
+            plugin.windicator.mansionBossCooldown = plugin.windicator.BOSS_COOLDOWN;
+        } else if (entity.equals(plugin.windicator.endBoss)) {
+            plugin.windicator.endBossCooldown = plugin.windicator.BOSS_COOLDOWN;
+        }
         if (entity instanceof Mob && !(entity instanceof Animals)) {
             event.getDrops().clear();
             if (entity.getKiller() == null) return;
