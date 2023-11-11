@@ -325,31 +325,35 @@ public final class Windicator {
         }
     }
 
-    void regen() {
+    protected void regen() {
         World world = getWorld();
         World mirror = getMirrorWorld();
         if (world == null || mirror == null) return;
         int inx = plugin.random.nextInt(16);
         int inz = plugin.random.nextInt(16);
-        for (Chunk chunk : world.getLoadedChunks()) {
+        List<Chunk> chunks = new ArrayList<>();
+        for (Chunk chunk : world.getLoadedChunks()) chunks.add(chunk);
+        Collections.shuffle(chunks, plugin.random);
+        for (Chunk chunk : chunks) {
+            if (chunk.getLoadLevel() != Chunk.LoadLevel.ENTITY_TICKING) continue;
             int x = (chunk.getX() << 4) + inx;
             int z = (chunk.getZ() << 4) + inz;
             int hi = mirror.getHighestBlockYAt(x, z);
             if (hi <= 0) continue;
-            int y = plugin.random.nextInt(hi) + 1;
-            Block block = world.getBlockAt(x, y, z);
-            if (block.getType().isSolid()) continue;
-            Block mblock = mirror.getBlockAt(block.getX(),
-                                             block.getY(),
-                                             block.getZ());
-            if (!mblock.getType().isSolid() || mblock.isEmpty() || mblock.isLiquid()) {
-                continue;
+            for (int y = world.getMinHeight(); y <= hi; y += 1) {
+                Block block = world.getBlockAt(x, y, z);
+                if (block.getType().isSolid()) continue;
+                Block mblock = mirror.getBlockAt(block.getX(),
+                                                 block.getY(),
+                                                 block.getZ());
+                if (!mblock.getType().isSolid() || mblock.isEmpty() || mblock.isLiquid()) {
+                    continue;
+                }
+                BlockData data = mblock.getBlockData();
+                if (data.equals(block.getBlockData())) continue;
+                block.setBlockData(data, false);
+                return;
             }
-            BlockData data = mblock.getBlockData();
-            if (data.equals(block.getBlockData())) continue;
-            block.setBlockData(data, false);
-            plugin.getLogger().info("Restoring " + Blocks.toString(block)
-                                    + " -> " + data.getAsString());
         }
     }
 
