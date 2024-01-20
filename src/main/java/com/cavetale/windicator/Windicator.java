@@ -186,7 +186,8 @@ public final class Windicator {
         switch (coreType) {
         case WATER:
             return EnumSet.of(EntityType.GUARDIAN,
-                              EntityType.DROWNED);
+                              EntityType.DROWNED,
+                              EntityTYpe.PUFFERFISH);
         case MANSION:
             return EnumSet.of(EntityType.PILLAGER,
                               EntityType.RAVAGER,
