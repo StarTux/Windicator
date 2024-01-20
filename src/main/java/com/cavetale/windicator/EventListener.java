@@ -85,13 +85,13 @@ public final class EventListener implements Listener {
                 other.sendMessage(text(player.getName() + " broke the " + toCamelCase(" ", coreType) + " core", GOLD));
             }
             plugin.getLogger().info(player.getName() + " broke the " + coreType + " core");
-            plugin.windicator.addScore(player, 10);
+            plugin.windicator.addScore(player, 25);
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.random.nextInt(5)));
-            plugin.windicator.addScore(player, 5);
+            plugin.windicator.addScore(player, 10);
         }
         if (block.getType().name().endsWith("_ORE")) {
             event.setDropItems(false);

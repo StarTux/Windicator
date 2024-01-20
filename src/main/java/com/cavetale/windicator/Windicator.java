@@ -187,7 +187,7 @@ public final class Windicator {
         case WATER:
             return EnumSet.of(EntityType.GUARDIAN,
                               EntityType.DROWNED,
-                              EntityTYpe.PUFFERFISH);
+                              EntityType.PUFFERFISH);
         case MANSION:
             return EnumSet.of(EntityType.PILLAGER,
                               EntityType.RAVAGER,
