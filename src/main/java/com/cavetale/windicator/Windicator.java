@@ -220,7 +220,7 @@ public final class Windicator {
         Set<EntityType> set = getCoreEntities(coreType);
         if (set.isEmpty()) return false;
         Block block = origin.getRelative(plugin.rnd(dist),
-                                         plugin.rnd(dist / 2),
+                                         plugin.rnd(dist),
                                          plugin.rnd(dist));
         if (!block.isEmpty() && !block.isLiquid()) return false;
         int nbor = 0;

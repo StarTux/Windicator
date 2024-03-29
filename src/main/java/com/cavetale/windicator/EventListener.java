@@ -13,12 +13,14 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.entity.Animals;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -38,6 +40,9 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Transformation;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 import static com.cavetale.core.util.CamelCase.toCamelCase;
 import static net.kyori.adventure.text.Component.join;
 import static net.kyori.adventure.text.Component.space;
@@ -51,18 +56,39 @@ import static net.kyori.adventure.text.format.TextDecoration.*;
 public final class EventListener implements Listener {
     final WindicatorPlugin plugin;
 
-    private int countProtectSpawners(Block origin, CoreType coreType) {
-        int count = 0;
+    private List<Block> findProtectSpawners(Block origin, CoreType coreType) {
+        final List<Block> result = new ArrayList<>();
         Set<EntityType> types = plugin.windicator.getCoreEntities(coreType);
-        for (CreatureSpawner spawner : Blocks.findNearbySpawners(origin, 10, 4, 10)) {
+        for (CreatureSpawner spawner : Blocks.findNearbySpawners(origin, 16, 16, 16)) {
             EntityType entityType = spawner.getSpawnedType();
             if (types.contains(entityType)) {
-                spawner.getWorld().playSound(spawner.getBlock().getLocation(),
-                                             Sound.BLOCK_GLASS_BREAK, SoundCategory.MASTER, 1.0f, 2.0f);
-                count += 1;
+                result.add(spawner.getBlock());
             }
         }
-        return count;
+        return result;
+    }
+
+    private int countProtectSpawners(Block origin, CoreType coreType) {
+        return findProtectSpawners(origin, coreType).size();
+    }
+
+    private void highlightNearbySpawners(List<Block> blocks) {
+        for (var block : blocks) {
+            final var world = block.getWorld();
+            world.playSound(block.getLocation(), Sound.BLOCK_GLASS_BREAK, SoundCategory.MASTER, 1.0f, 2.0f);
+            final var entity = world.spawn(block.getLocation().add(0.5, 0.5, 0.5), BlockDisplay.class, e -> {
+                    e.setPersistent(false);
+                    e.setGlowing(true);
+                    e.setBlock(Material.SPAWNER.createBlockData());
+                    e.setGlowColorOverride(Color.RED);
+                    e.setBrightness(new BlockDisplay.Brightness(15, 15));
+                    e.setTransformation(new Transformation(new Vector3f(-0.5125f, -0.5125f, -0.5125f),
+                                                           new AxisAngle4f(0f, 0f, 0f, 0f),
+                                                           new Vector3f(1.05f, 1.05f, 1.05f),
+                                                           new AxisAngle4f(0f, 0f, 0f, 0f)));
+                });
+            Bukkit.getScheduler().runTaskLater(plugin, entity::remove, 60L);
+        }
     }
 
     @EventHandler
@@ -73,10 +99,12 @@ public final class EventListener implements Listener {
         CoreType coreType = plugin.windicator.coreAt(block);
         final Player player = event.getPlayer();
         if (coreType != null) {
-            if (countProtectSpawners(block, coreType) > 0) {
+            final var nearbySpawners = findProtectSpawners(event.getBlock(), coreType);
+            if (!nearbySpawners.isEmpty()) {
                 event.setCancelled(true);
                 player.sendMessage(text("This core is protected by nearby spawners", RED));
                 player.sendActionBar(text("This core is protected by nearby spawners", RED));
+                highlightNearbySpawners(nearbySpawners);
                 return;
             }
             plugin.windicator.removeCore(block, coreType);
@@ -99,15 +127,15 @@ public final class EventListener implements Listener {
     }
 
     @EventHandler
-    void onBlockDamage(BlockDamageEvent event) {
+    private void onBlockDamage(BlockDamageEvent event) {
         CoreType coreType = plugin.windicator.coreAt(event.getBlock());
         if (coreType == null) return;
         event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 20 * 30, 0, true, true, true));
-        if (countProtectSpawners(event.getBlock(), coreType) > 0) {
-            event.getPlayer().sendMessage(text("This core is protected by nearby spawners!",
-                                               RED));
-            event.getPlayer().sendActionBar(text("This core is protected by nearby spawners!",
-                                                 RED));
+        final var nearbySpawners = findProtectSpawners(event.getBlock(), coreType);
+        if (!nearbySpawners.isEmpty()) {
+            event.getPlayer().sendMessage(text("This core is protected by nearby spawners!", RED));
+            event.getPlayer().sendActionBar(text("This core is protected by nearby spawners!", RED));
+            highlightNearbySpawners(nearbySpawners);
         }
     }
 
