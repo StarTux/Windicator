@@ -59,7 +59,7 @@ public final class EventListener implements Listener {
     private List<Block> findProtectSpawners(Block origin, CoreType coreType) {
         final List<Block> result = new ArrayList<>();
         Set<EntityType> types = plugin.windicator.getCoreEntities(coreType);
-        for (CreatureSpawner spawner : Blocks.findNearbySpawners(origin, 16, 16, 16)) {
+        for (CreatureSpawner spawner : Blocks.findNearbySpawners(origin, 12, 10, 12)) {
             EntityType entityType = spawner.getSpawnedType();
             if (types.contains(entityType)) {
                 result.add(spawner.getBlock());
@@ -148,7 +148,7 @@ public final class EventListener implements Listener {
         CoreType coreType = plugin.windicator.coreOf(entityType);
         if (coreType == null) return;
         if (plugin.windicator.countCoreBlocks(coreType) == 0) return;
-        if (plugin.random.nextInt(3) == 0) {
+        if (plugin.random.nextInt(5) == 0) {
             plugin.windicator.createNewSpawner(block, coreType);
         }
     }

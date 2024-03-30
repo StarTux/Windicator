@@ -216,12 +216,13 @@ public final class Windicator {
     }
 
     boolean createNewSpawner(Block origin, CoreType coreType) {
-        final int dist = 16;
+        final int dist = 12;
         Set<EntityType> set = getCoreEntities(coreType);
         if (set.isEmpty()) return false;
         Block block = origin.getRelative(plugin.rnd(dist),
                                          plugin.rnd(dist),
                                          plugin.rnd(dist));
+        if (block.getY() <= 0) return false; // bedrock on old map
         if (!block.isEmpty() && !block.isLiquid()) return false;
         int nbor = 0;
         final int radius = 2;
