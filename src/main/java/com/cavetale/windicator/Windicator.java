@@ -310,11 +310,15 @@ public final class Windicator {
                 Location loc = world.getSpawnLocation();
                 if (loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4,
                                                  loc.getBlockZ() >> 4)) {
-                    boss = world.spawn(loc, Wither.class);
-                    if (boss != null) {
-                        boss.setPersistent(false);
-                        boss.setRemoveWhenFarAway(true);
-                    }
+                    boss = world.spawn(loc, Wither.class, e -> {
+                            e.setPersistent(false);
+                            e.setRemoveWhenFarAway(true);
+                            final double health = 1024.0;
+                            e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
+                            e.setHealth(health);
+                            e.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(10);
+                            e.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS).setBaseValue(10);
+                        });
                 }
             }
             return;
