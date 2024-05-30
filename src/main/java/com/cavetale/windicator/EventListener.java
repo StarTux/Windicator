@@ -130,7 +130,7 @@ public final class EventListener implements Listener {
     private void onBlockDamage(BlockDamageEvent event) {
         CoreType coreType = plugin.windicator.coreAt(event.getBlock());
         if (coreType == null) return;
-        event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 20 * 30, 0, true, true, true));
+        event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 20 * 30, 0, true, true, true));
         final var nearbySpawners = findProtectSpawners(event.getBlock(), coreType);
         if (!nearbySpawners.isEmpty()) {
             event.getPlayer().sendMessage(text("This core is protected by nearby spawners!", RED));
