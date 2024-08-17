@@ -126,7 +126,7 @@ public final class Windicator {
 
     boolean removeCore(Block block, CoreType coreType) {
         List<Vec3> list = getCores(coreType);
-        if (list == null) return false;
+        if (list == null || list.isEmpty()) return false;
         boolean res = list.remove(Vec3.of(block));
         if (list.isEmpty()) {
             state.cores.remove(coreType.name().toLowerCase());
