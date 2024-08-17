@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -91,6 +92,7 @@ public final class Windicator {
     }
 
     void setEnabled(boolean enabled) {
+        getWorld().setDifficulty(Difficulty.HARD);
         state.enabled = enabled;
     }
 
