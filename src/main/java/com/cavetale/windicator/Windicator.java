@@ -286,10 +286,10 @@ public final class Windicator {
         T result = world.spawn(block.getLocation().add(0.5, 0.0, 0.5), clazz, e -> {
                 final double health = 100.0;
                 if (e.getHealth() < health) {
-                    e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
+                    e.getAttribute(Attribute.MAX_HEALTH).setBaseValue(health);
                     e.setHealth(health);
-                    e.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(10.0);
-                    e.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(1.0);
+                    e.getAttribute(Attribute.ATTACK_DAMAGE).setBaseValue(10.0);
+                    e.getAttribute(Attribute.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
                 }
                 e.setPersistent(false);
                 e.setRemoveWhenFarAway(false);
@@ -317,10 +317,10 @@ public final class Windicator {
                             e.setPersistent(false);
                             e.setRemoveWhenFarAway(true);
                             final double health = 1024.0;
-                            e.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(health);
+                            e.getAttribute(Attribute.MAX_HEALTH).setBaseValue(health);
                             e.setHealth(health);
-                            e.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(10);
-                            e.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS).setBaseValue(10);
+                            e.getAttribute(Attribute.ARMOR).setBaseValue(10);
+                            e.getAttribute(Attribute.ARMOR_TOUGHNESS).setBaseValue(10);
                         });
                 }
             }
