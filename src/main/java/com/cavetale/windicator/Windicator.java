@@ -202,10 +202,10 @@ public final class Windicator {
                               EntityType.SPIDER,
                               EntityType.WITHER_SKELETON);
         case END:
-            return EnumSet.of(EntityType.SHULKER,
-                              EntityType.ENDERMAN,
+            return EnumSet.of(EntityType.ENDERMAN,
                               EntityType.GHAST,
-                              EntityType.PHANTOM);
+                              EntityType.PHANTOM,
+                              EntityType.ENDERMITE);
         default: return Collections.emptySet();
         }
     }
