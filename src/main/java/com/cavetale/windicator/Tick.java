@@ -45,7 +45,6 @@ public final class Tick implements Runnable {
                                                            8, 0.125, 0.125, 0.125, 0.0);
                         }
                         final boolean spawned = plugin.getWindicator().createNewSpawner(block, coreType);
-                        plugin.getLogger().info("Tried creating spawner for " + block.getX() + " " + block.getY() + " " + block.getZ() + ": " + spawned);
                     }
                 }
             }
