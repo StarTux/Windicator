@@ -344,11 +344,16 @@ public final class Windicator {
         Collections.shuffle(chunks, plugin.getRandom());
         for (Chunk chunk : chunks) {
             if (chunk.getLoadLevel() != Chunk.LoadLevel.ENTITY_TICKING) continue;
-            int x = (chunk.getX() << 4) + inx;
-            int z = (chunk.getZ() << 4) + inz;
-            int hi = mirror.getHighestBlockYAt(x, z);
-            if (hi <= 0) continue;
-            for (int y = world.getMinHeight(); y <= hi; y += 1) {
+            final int x = (chunk.getX() << 4) + inx;
+            final int z = (chunk.getZ() << 4) + inz;
+            final int lo = world.getMinHeight();
+            final int hi = mirror.getHighestBlockYAt(x, z);
+            if (hi <= lo) continue;
+            final Location center = new Location(world, (double) x + 0.5, 0.5 * ((double) lo + (double) hi), (double) z + 0.5);
+            if (!center.getNearbyEntitiesByType(Player.class, 0.5, 0.5 * (double) (hi - lo + 1), 0.5).isEmpty()) {
+                continue;
+            }
+            for (int y = lo; y <= hi; y += 1) {
                 Block block = world.getBlockAt(x, y, z);
                 if (PlayerPlacedBlocks.isPlayerPlaced(block)) continue;
                 if (block.getType().isSolid()) continue;
