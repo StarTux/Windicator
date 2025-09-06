@@ -52,6 +52,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
+import static com.cavetale.core.font.Unicode.tiny;
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.join;
 import static net.kyori.adventure.text.Component.space;
@@ -268,13 +269,13 @@ public final class EventListener implements Listener {
             List<Vec3i> list = plugin.getWindicator().getState().getCores().get(core);
             if (list == null) continue;
             if (list.isEmpty()) {
-                lines.add(text(core.getDisplayName(), DARK_GRAY, STRIKETHROUGH));
+                lines.add(text(core.getDisplayName(), DARK_RED, STRIKETHROUGH));
             } else {
-                lines.add(textOfChildren(text(core.getDisplayName(), GRAY),
+                lines.add(textOfChildren(text(core.getDisplayName(), RED),
                                          text(" " + list.size(), GOLD)));
             }
         }
-        lines.add(textOfChildren(text("Score ", DARK_GRAY), text(plugin.getWindicator().getState().getScore(event.getPlayer().getUniqueId()), YELLOW)));
+        lines.add(textOfChildren(text(tiny("score "), GRAY), text(plugin.getWindicator().getState().getScore(event.getPlayer().getUniqueId()), YELLOW)));
         event.bossbar(PlayerHudPriority.HIGH, join(separator(space()), lines), BossBar.Color.RED, BossBar.Overlay.PROGRESS, 1.0f);
         if (plugin.getWindicator().isVictory()) {
             lines.addAll(plugin.getWindicator().getHighscoreLines());
