@@ -215,6 +215,7 @@ public final class EventListener implements Listener {
         if (entity instanceof Mob && !(entity instanceof Animals)) {
             event.getDrops().clear();
             if (entity.getKiller() == null) return;
+            if (entity.getEntitySpawnReason() == CreatureSpawnEvent.SpawnReason.SLIME_SPLIT) return;
             CoreType coreType = plugin.getWindicator().coreOf(entity.getType());
             if (coreType == null) return;
             event.getDrops().add(new ItemStack(Material.EMERALD, 1 + plugin.getRandom().nextInt(5)));

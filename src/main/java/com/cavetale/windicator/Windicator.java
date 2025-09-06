@@ -155,10 +155,14 @@ public final class Windicator {
         if (list == null) return List.of();
         final World world = getWorld();
         if (world == null) return List.of();
-        return list.stream()
-            .filter(v -> world.isChunkLoaded(v.x >> 4, v.x >> 4))
-            .map(v -> world.getBlockAt(v.x, v.y, v.z))
-            .collect(Collectors.toList());
+        final List<Block> result = new ArrayList<>();
+        for (Vec3i v : list) {
+            if (!world.isChunkLoaded(v.x >> 4, v.z >> 4)) continue;
+            final Block block = v.toBlock(world);
+            if (block.getChunk().getLoadLevel() != Chunk.LoadLevel.ENTITY_TICKING) continue;
+            result.add(block);
+        }
+        return result;
     }
 
     public int countCoreBlocks(CoreType coreType) {
@@ -231,7 +235,6 @@ public final class Windicator {
             EntityType spawnerType = spawner.getSpawnedType();
             if (set.contains(spawnerType)) return false;
         }
-        System.out.println("D");
         final List<EntityType> opts = List.copyOf(set);
         final EntityType entityType = opts.get(plugin.getRandom().nextInt(opts.size()));
         block.setType(Material.SPAWNER);
@@ -365,13 +368,13 @@ public final class Windicator {
                 continue;
             }
             for (int y = lo; y <= hi; y += 1) {
-                Block block = world.getBlockAt(x, y, z);
+                final Block block = world.getBlockAt(x, y, z);
                 if (PlayerPlacedBlocks.isPlayerPlaced(block)) continue;
                 if (block.getType().isSolid()) continue;
-                Block mblock = mirror.getBlockAt(block.getX(),
+                final Block mblock = mirror.getBlockAt(block.getX(),
                                                  block.getY(),
                                                  block.getZ());
-                if (!mblock.getType().isSolid() || mblock.isEmpty() || mblock.isLiquid()) {
+                if (!mblock.getType().isSolid() || mblock.isEmpty() || mblock.isLiquid() || mblock.getType() == Material.TRIAL_SPAWNER) {
                     continue;
                 }
                 BlockData data = mblock.getBlockData();
