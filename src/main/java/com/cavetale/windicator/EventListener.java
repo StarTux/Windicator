@@ -4,7 +4,10 @@ import com.cavetale.core.event.hud.PlayerHudEvent;
 import com.cavetale.core.event.hud.PlayerHudPriority;
 import com.cavetale.core.struct.Vec3i;
 import com.cavetale.mytems.Mytems;
+import com.cavetale.mytems.event.block.PlayerDamageBlockTickEvent;
 import com.destroystokyo.paper.MaterialTags;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,22 +19,28 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
+import org.bukkit.entity.AbstractSkeleton;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Hoglin;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.Phantom;
+import org.bukkit.entity.PiglinAbstract;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.SpawnerSpawnEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
@@ -40,17 +49,17 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
+import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.join;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.textOfChildren;
 import static net.kyori.adventure.text.JoinConfiguration.separator;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextColor.color;
 import static net.kyori.adventure.text.format.TextDecoration.*;
 
 @RequiredArgsConstructor
@@ -97,47 +106,79 @@ public final class EventListener implements Listener {
         if (!plugin.getWindicator().isPlaying()) return;
         Block block = event.getBlock();
         if (!plugin.getWindicator().isInWorld(block)) return;
-        CoreType coreType = plugin.getWindicator().coreAt(block);
-        final Player player = event.getPlayer();
-        if (coreType != null) {
-            final var nearbySpawners = findProtectSpawners(event.getBlock(), coreType);
-            if (!nearbySpawners.isEmpty()) {
-                event.setCancelled(true);
-                player.sendMessage(text("This core is protected by nearby spawners", RED));
-                player.sendActionBar(text("This core is protected by nearby spawners", RED));
-                highlightNearbySpawners(nearbySpawners);
-                return;
-            }
-            plugin.getWindicator().removeCore(block, coreType);
-            plugin.getWindicator().save();
-            for (Player other : Bukkit.getOnlinePlayers()) {
-                other.sendMessage(text(player.getName() + " broke the " + coreType.getDisplayName() + " core", GOLD));
-            }
-            plugin.getLogger().info(player.getName() + " broke the " + coreType + " core");
-            plugin.getWindicator().addScore(player, 25);
+        if (plugin.getWindicator().coreAt(block) != null) {
+            event.setCancelled(true);
+            return;
         }
         if (block.getType() == Material.SPAWNER) {
             block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.getRandom().nextInt(5)));
-            plugin.getWindicator().addScore(player, 10);
+            plugin.getWindicator().addScore(event.getPlayer(), 10);
         }
         if (block.getType().name().endsWith("_ORE")) {
             event.setDropItems(false);
         }
     }
 
-    @EventHandler
-    private void onBlockDamage(BlockDamageEvent event) {
-        CoreType coreType = plugin.getWindicator().coreAt(event.getBlock());
+    @EventHandler(ignoreCancelled = false)
+    private void onPlayerDamageBlockTick(PlayerDamageBlockTickEvent event) {
+        final Block block = event.getBlock();
+        final CoreType coreType = plugin.getWindicator().coreAt(block);
         if (coreType == null) return;
-        event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 20 * 30, 0, true, true, true));
-        final var nearbySpawners = findProtectSpawners(event.getBlock(), coreType);
-        if (!nearbySpawners.isEmpty()) {
-            event.getPlayer().sendMessage(text("This core is protected by nearby spawners!", RED));
-            event.getPlayer().sendActionBar(text("This core is protected by nearby spawners!", RED));
-            highlightNearbySpawners(nearbySpawners);
+        final Player player = event.getPlayer();
+        if (event.isCancelled()) {
+            player.sendActionBar(empty());
+            return;
         }
+        final List<Block> nearbySpawners = findProtectSpawners(block, coreType);
+        if (!nearbySpawners.isEmpty()) {
+            player.sendMessage(text("This core is protected by nearby spawners!", RED));
+            player.sendActionBar(text("This core is protected by nearby spawners!", RED));
+            highlightNearbySpawners(nearbySpawners);
+            event.setCancelled(true);
+            return;
+        }
+        final ItemStack item = player.getInventory().getItemInMainHand();
+        if (item == null || item.isEmpty()) return;
+        final Duration breakTime;
+        switch (item.getType()) {
+        case IRON_PICKAXE:
+            breakTime = Duration.ofSeconds(137L);
+            break;
+        case DIAMOND_PICKAXE:
+            breakTime = Duration.ofSeconds(31L);
+            break;
+        case NETHERITE_PICKAXE:
+            breakTime = Duration.ofSeconds(28L);
+            break;
+        default: return;
+        }
+        final Duration miningTime = Duration.between(event.getStartTime(), Instant.now());
+        final int bars = 20;
+        final int full = ((int) miningTime.toMillis() * bars) / (int) breakTime.toMillis();
+        final int empty = bars - full;
+        player.sendActionBar(textOfChildren(text(coreType.getDisplayName() + " Core ", DARK_RED),
+                                            text("|".repeat(full), DARK_RED),
+                                            text("|".repeat(empty), color(0x303030))));
+        if (miningTime.compareTo(breakTime) < 0) {
+            return;
+        }
+        event.setCancelled(true);
+        plugin.getWindicator().removeCore(block, coreType, false);
+        plugin.getWindicator().save();
+        block.setType(Material.AIR);
+        block.getWorld().spawnParticle(Particle.BLOCK,
+                                       block.getLocation().add(0.5, 0.5, 0.5),
+                                       32, 0.125, 0.125, 0.125, 0.0,
+                                       Material.TRIAL_SPAWNER.createBlockData());
+        block.getWorld().playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.BLOCK_END_PORTAL_SPAWN, SoundCategory.MASTER, 1f, 2f);
+        for (Player other : Bukkit.getOnlinePlayers()) {
+            other.sendMessage(text(player.getName() + " broke the " + coreType.getDisplayName() + " core", GOLD));
+            other.playSound(other, Sound.BLOCK_END_PORTAL_SPAWN, SoundCategory.MASTER, 0.5f, 2f);
+        }
+        plugin.getLogger().info(player.getName() + " broke the " + coreType + " core");
+        plugin.getWindicator().addScore(player, 25);
     }
 
     @EventHandler
@@ -224,7 +265,7 @@ public final class EventListener implements Listener {
         List<Component> lines = new ArrayList<>();
         lines.add(text("Windicator", GOLD, BOLD));
         for (CoreType core : CoreType.values()) {
-            List<Vec3i> list = plugin.getWindicator().getCores(core);
+            List<Vec3i> list = plugin.getWindicator().getState().getCores().get(core);
             if (list == null) continue;
             if (list.isEmpty()) {
                 lines.add(text(core.getDisplayName(), DARK_GRAY, STRIKETHROUGH));
@@ -273,6 +314,22 @@ public final class EventListener implements Listener {
             || mat == Material.BREAD;
         if (doNull) {
             event.getInventory().setResult(null);
+        }
+    }
+
+    @EventHandler
+    private void onCreatureSpawn(CreatureSpawnEvent event) {
+        final Entity mob = event.getEntity();
+        if (mob instanceof Zombie zombie) {
+            zombie.setShouldBurnInDay(false);
+        } else if (mob instanceof AbstractSkeleton skeleton) {
+            skeleton.setShouldBurnInDay(false);
+        } else if (mob instanceof Phantom phantom) {
+            phantom.setShouldBurnInDay(false);
+        } else if (mob instanceof PiglinAbstract piglin) {
+            piglin.setImmuneToZombification(true);
+        } else if (mob instanceof Hoglin hoglin) {
+            hoglin.setImmuneToZombification(true);
         }
     }
 }

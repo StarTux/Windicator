@@ -57,7 +57,7 @@ public final class Windicator {
     private List<Component> highscoreLines = List.of();
 
     protected void load() {
-        state = Json.load(new File(STATE_PATH), State.class, State::new);
+        state = Json.load(new File(plugin.getDataFolder(), STATE_PATH), State.class, State::new);
         for (Chunk chunk : getWorld().getLoadedChunks()) {
             getMirrorWorld().getChunkAtAsync(chunk.getX(), chunk.getZ(), (Consumer<Chunk>) mchunk -> {
                     mchunk.addPluginChunkTicket(plugin);
@@ -77,7 +77,8 @@ public final class Windicator {
     }
 
     public void save() {
-        Json.save(new File(STATE_PATH), state, true);
+        plugin.getDataFolder().mkdirs();
+        Json.save(new File(plugin.getDataFolder(), STATE_PATH), state, true);
     }
 
     public boolean isValid() {
@@ -94,9 +95,7 @@ public final class Windicator {
     }
 
     public boolean isCore(Block block, CoreType coreType) {
-        final List<Vec3i> list = getCores(coreType);
-        if (list == null) return false;
-        for (Vec3i vec : list) {
+        for (Vec3i vec : getCores(coreType)) {
             if (vec.equals(Vec3i.of(block))) return true;
         }
         return false;
@@ -121,12 +120,12 @@ public final class Windicator {
         return true;
     }
 
-    public boolean removeCore(Block block, CoreType coreType) {
-        List<Vec3i> list = getCores(coreType);
-        if (list == null || list.isEmpty()) return false;
-        boolean res = list.remove(Vec3i.of(block));
-        if (list.isEmpty()) {
-            state.getCores().remove(coreType.name().toLowerCase());
+    public boolean removeCore(Block block, CoreType coreType, boolean removeIfEmpty) {
+        final List<Vec3i> list = state.getCores().get(coreType);
+        if (list == null) return false;
+        final boolean res = list.remove(Vec3i.of(block));
+        if (removeIfEmpty && list.isEmpty()) {
+            state.getCores().remove(coreType);
         }
         for (BlockDisplay bd : block.getLocation().getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
             bd.remove();
@@ -135,7 +134,7 @@ public final class Windicator {
     }
 
     public List<Vec3i> getCores(CoreType coreType) {
-        List<Vec3i> list = state.getCores().get(coreType.name().toLowerCase());
+        List<Vec3i> list = state.getCores().get(coreType);
         return list == null
             ? List.of()
             : list;
@@ -192,10 +191,15 @@ public final class Windicator {
         final int dist = 12;
         final Set<EntityType> set = coreType.getCoreEntities();
         if (set.isEmpty()) return false;
-        final Block block = origin.getRelative(plugin.rnd(dist),
-                                               plugin.rnd(dist),
-                                               plugin.rnd(dist));
-        if (block.getY() <= 0) return false; // bedrock on old map
+        Block block = origin.getRelative(plugin.rnd(dist),
+                                         plugin.rnd(dist),
+                                         plugin.rnd(dist));
+        final int min = block.getWorld().getMinHeight();
+        final int max = block.getWorld().getMaxHeight();
+        while (!block.isEmpty() && !block.isLiquid() && block.getY() < max) {
+            block = block.getRelative(0, 1, 0);
+        }
+        if (block.getY() < min) return false; // bedrock on old map
         if (!block.isEmpty() && !block.isLiquid()) return false;
         int nbor = 0;
         final int radius = 2;
@@ -216,6 +220,7 @@ public final class Windicator {
             EntityType spawnerType = spawner.getSpawnedType();
             if (set.contains(spawnerType)) return false;
         }
+        System.out.println("D");
         final List<EntityType> opts = List.copyOf(set);
         final EntityType entityType = opts.get(plugin.getRandom().nextInt(opts.size()));
         block.setType(Material.SPAWNER);
@@ -284,31 +289,13 @@ public final class Windicator {
     }
 
     public void respawnBosses() {
-        // Spawn the Wither Boss
-        if (state.getCores().isEmpty()) {
-            if (boss == null || !boss.isValid()) {
-                boss = null;
-                World world = getWorld();
-                Location loc = world.getSpawnLocation();
-                if (loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4,
-                                                 loc.getBlockZ() >> 4)) {
-                    boss = world.spawn(loc, Wither.class, e -> {
-                            e.setPersistent(false);
-                            e.setRemoveWhenFarAway(true);
-                            final double health = 1024.0;
-                            e.getAttribute(Attribute.MAX_HEALTH).setBaseValue(health);
-                            e.setHealth(health);
-                            e.getAttribute(Attribute.ARMOR).setBaseValue(10);
-                            e.getAttribute(Attribute.ARMOR_TOUGHNESS).setBaseValue(10);
-                        });
-                }
-            }
-            return;
-        }
+        int totalCores = 0;
         for (CoreType coreType : CoreType.values()) {
-            if (countCoreBlocks(coreType) == 0) {
+            final int count = countCoreBlocks(coreType);
+            if (count == 0) {
                 continue;
             }
+            totalCores += count;
             CoreBoss coreBoss = bossMap.get(coreType);
             if (coreBoss == null) {
                 coreBoss = new CoreBoss();
@@ -325,6 +312,25 @@ public final class Windicator {
                 coreBoss.setMob(tryToSpawnBoss(coreType));
             }
         }
+        // Spawn the Wither Boss
+        if (totalCores == 0 && (boss == null || !boss.isValid())) {
+            boss = null;
+            World world = getWorld();
+            Location loc = world.getSpawnLocation();
+            if (loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4,
+                                             loc.getBlockZ() >> 4)) {
+                boss = world.spawn(loc, Wither.class, e -> {
+                        e.setPersistent(false);
+                        e.setRemoveWhenFarAway(true);
+                        final double health = 1024.0;
+                        e.getAttribute(Attribute.MAX_HEALTH).setBaseValue(health);
+                        e.setHealth(health);
+                        e.getAttribute(Attribute.ARMOR).setBaseValue(10);
+                        e.getAttribute(Attribute.ARMOR_TOUGHNESS).setBaseValue(10);
+                    });
+            }
+        }
+        return;
     }
 
     public void regen() {

@@ -6,6 +6,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.BlockDisplay;
@@ -33,18 +34,18 @@ public final class Tick implements Runnable {
         } else {
             if (ticks % 200 == 0) {
                 for (CoreType coreType : CoreType.values()) {
-                    boolean spawned = false;
                     for (Block block : plugin.getWindicator().getCoreBlocks(coreType)) {
                         if (!block.getType().isSolid()) {
-                            plugin.getWindicator().removeCore(block, coreType);
+                            plugin.getWindicator().removeCore(block, coreType, false);
                             plugin.getWindicator().save();
                             continue;
                         } else {
-                            block.getWorld().spawnParticle(org.bukkit.Particle.LAVA,
+                            block.getWorld().spawnParticle(Particle.LAVA,
                                                            block.getLocation().add(0.5, 1.0, 0.5),
                                                            8, 0.125, 0.125, 0.125, 0.0);
                         }
-                        spawned = plugin.getWindicator().createNewSpawner(block, coreType);
+                        final boolean spawned = plugin.getWindicator().createNewSpawner(block, coreType);
+                        plugin.getLogger().info("Tried creating spawner for " + block.getX() + " " + block.getY() + " " + block.getZ() + ": " + spawned);
                     }
                 }
             }

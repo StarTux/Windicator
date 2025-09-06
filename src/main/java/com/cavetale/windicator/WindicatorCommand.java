@@ -133,7 +133,7 @@ public final class WindicatorCommand implements TabExecutor {
             }
             Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
-            boolean res = plugin.getWindicator().removeCore(block, coreType);
+            boolean res = plugin.getWindicator().removeCore(block, coreType, true);
             if (res) {
                 plugin.getWindicator().save();
                 sender.sendMessage("Core block removed: " + coreType + ": " + Vec3i.of(block));
