@@ -26,6 +26,10 @@ public enum CoreType {
                                            EntityType.GHAST,
                                            EntityType.PHANTOM,
                                            EntityType.ENDERMITE)),
+    BRIDGES(EntityType.BREEZE, Set.of(EntityType.BREEZE, EntityType.HUSK, EntityType.SKELETON, EntityType.CREEPER, EntityType.SPIDER)),
+    PYRAMID(EntityType.HUSK, Set.of(EntityType.HUSK, EntityType.SKELETON, EntityType.CREEPER, EntityType.SPIDER, EntityType.WITCH, EntityType.SLIME)),
+    BREEZEWAY(EntityType.BREEZE, Set.of(EntityType.BREEZE, EntityType.HUSK, EntityType.SKELETON, EntityType.CREEPER, EntityType.SPIDER)),
+    FORTRESS(EntityType.PILLAGER, Set.of(EntityType.PILLAGER, EntityType.HUSK, EntityType.SKELETON, EntityType.CREEPER, EntityType.SPIDER, EntityType.WITCH, EntityType.SLIME)),
     ;
 
     private final String displayName = toCamelCase(" ", this);
