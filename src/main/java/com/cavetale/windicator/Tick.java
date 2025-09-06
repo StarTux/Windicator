@@ -34,7 +34,7 @@ public final class Tick implements Runnable {
         } else {
             if (ticks % 200 == 0) {
                 for (CoreType coreType : CoreType.values()) {
-                    for (Block block : plugin.getWindicator().getCoreBlocks(coreType)) {
+                    for (Block block : plugin.getWindicator().getCoreBlocksIfLoaded(coreType)) {
                         if (!block.getType().isSolid()) {
                             plugin.getWindicator().removeCore(block, coreType, false);
                             plugin.getWindicator().save();
@@ -54,7 +54,7 @@ public final class Tick implements Runnable {
             final double time = (double) ticks * 0.2;
             final float dy = (float) (Math.sin(time) * 0.05);
             for (CoreType coreType : CoreType.values()) {
-                for (Block block : plugin.getWindicator().getCoreBlocks(coreType)) {
+                for (Block block : plugin.getWindicator().getCoreBlocksIfLoaded(coreType)) {
                     boolean hasOutline = false;
                     final Location location = block.getLocation();
                     for (BlockDisplay bd : location.getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {

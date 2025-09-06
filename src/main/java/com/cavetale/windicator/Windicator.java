@@ -143,10 +143,21 @@ public final class Windicator {
     public List<Block> getCoreBlocks(CoreType coreType) {
         List<Vec3i> list = getCores(coreType);
         if (list == null) return List.of();
-        World world = getWorld();
+        final World world = getWorld();
         if (world == null) return List.of();
         return list.stream()
-            .map(v -> world.getBlockAt(v.getX(), v.getY(), v.getZ()))
+            .map(v -> world.getBlockAt(v.x, v.y, v.z))
+            .collect(Collectors.toList());
+    }
+
+    public List<Block> getCoreBlocksIfLoaded(CoreType coreType) {
+        List<Vec3i> list = getCores(coreType);
+        if (list == null) return List.of();
+        final World world = getWorld();
+        if (world == null) return List.of();
+        return list.stream()
+            .filter(v -> world.isChunkLoaded(v.x >> 4, v.x >> 4))
+            .map(v -> world.getBlockAt(v.x, v.y, v.z))
             .collect(Collectors.toList());
     }
 
