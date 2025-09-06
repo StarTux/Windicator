@@ -1,5 +1,7 @@
 package com.cavetale.windicator;
 
+import com.cavetale.core.struct.Vec3i;
+import com.cavetale.core.util.Json;
 import com.cavetale.fam.trophy.Highscore;
 import com.cavetale.mytems.item.trophy.TrophyCategory;
 import java.util.ArrayList;
@@ -70,18 +72,18 @@ public final class WindicatorCommand implements TabExecutor {
         return List.of();
     }
 
-    boolean onCommand(CommandSender sender, String cmd, String[] args) throws Wrong {
+    public boolean onCommand(CommandSender sender, String cmd, String[] args) throws Wrong {
         switch (cmd) {
         case "info": {
             if (args.length != 0) return false;
-            sender.sendMessage("isValid=" + plugin.windicator.isValid());
-            sender.sendMessage("state=" + plugin.json.toJson(plugin.windicator.getState()));
+            sender.sendMessage("isValid=" + plugin.getWindicator().isValid());
+            sender.sendMessage("state=" + Json.serialize(plugin.getWindicator().getState()));
             return true;
         }
         case "start": {
-            plugin.windicator.setEnabled(true);
-            plugin.windicator.save();
-            if (plugin.windicator.isValid()) {
+            plugin.getWindicator().setEnabled(true);
+            plugin.getWindicator().save();
+            if (plugin.getWindicator().isValid()) {
                 sender.sendMessage("Game started");
             } else {
                 sender.sendMessage("Game started but still not valid.");
@@ -89,15 +91,15 @@ public final class WindicatorCommand implements TabExecutor {
             return true;
         }
         case "stop": {
-            plugin.windicator.setEnabled(false);
-            plugin.windicator.save();
+            plugin.getWindicator().setEnabled(false);
+            plugin.getWindicator().save();
             sender.sendMessage("Game stopped");
             return true;
         }
         case "victory": {
-            plugin.windicator.setVictory(!plugin.windicator.isVictory());
-            plugin.windicator.save();
-            sender.sendMessage("Victory set to: " + plugin.windicator.isVictory());
+            plugin.getWindicator().setVictory(!plugin.getWindicator().isVictory());
+            plugin.getWindicator().save();
+            sender.sendMessage("Victory set to: " + plugin.getWindicator().isVictory());
             return true;
         }
         case "addcore": {
@@ -112,11 +114,11 @@ public final class WindicatorCommand implements TabExecutor {
             }
             Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
-            if (!plugin.windicator.addCore(block, coreType)) {
+            if (!plugin.getWindicator().addCore(block, coreType)) {
                 throw new Wrong("Core block already contained.");
             }
-            plugin.windicator.save();
-            sender.sendMessage("Core block added: " + coreType + ": " + Vec3.of(block));
+            plugin.getWindicator().save();
+            sender.sendMessage("Core block added: " + coreType + ": " + Vec3i.of(block));
             return true;
         }
         case "removecore": {
@@ -131,35 +133,35 @@ public final class WindicatorCommand implements TabExecutor {
             }
             Block block = player.getTargetBlockExact(5);
             if (block == null) throw new Wrong("Not looking at block");
-            boolean res = plugin.windicator.removeCore(block, coreType);
+            boolean res = plugin.getWindicator().removeCore(block, coreType);
             if (res) {
-                plugin.windicator.save();
-                sender.sendMessage("Core block removed: " + coreType + ": " + Vec3.of(block));
+                plugin.getWindicator().save();
+                sender.sendMessage("Core block removed: " + coreType + ": " + Vec3i.of(block));
             } else {
-                throw new Wrong("Not a core block: " + Vec3.of(block));
+                throw new Wrong("Not a core block: " + Vec3i.of(block));
             }
             return true;
         }
         case "clearcores": {
             if (args.length != 0) return false;
-            plugin.windicator.clearCores();
-            plugin.windicator.save();
+            plugin.getWindicator().clearCores();
+            plugin.getWindicator().save();
             sender.sendMessage("Cores cleared.");
             return true;
         }
         case "clearscores": {
-            plugin.windicator.getState().scores.clear();
-            plugin.windicator.computeHighscore();
+            plugin.getWindicator().getState().getScores().clear();
+            plugin.getWindicator().computeHighscore();
             sender.sendMessage(text("Scores cleared", YELLOW));
             return true;
         }
         case "rewardscores": {
-            final int count = Highscore.reward(plugin.windicator.getState().scores,
+            final int count = Highscore.reward(plugin.getWindicator().getState().getScores(),
                                                "windicator",
                                                TrophyCategory.SWORD,
                                                text("Windicator", GOLD, BOLD),
                                                hi -> "You collected " + hi.score + " point" + (hi.score == 1 ? "" : "s"));
-            List<Highscore> highscore = Highscore.of(plugin.windicator.getState().scores);
+            List<Highscore> highscore = Highscore.of(plugin.getWindicator().getState().getScores());
             List<Component> highscoreLines = Highscore.sidebar(highscore, TrophyCategory.SWORD);
             for (Component line : highscoreLines) {
                 sender.sendMessage(line);

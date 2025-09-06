@@ -21,11 +21,11 @@ public final class Tick implements Runnable {
 
     @Override
     public void run() {
-        if (!plugin.windicator.isValid()) return;
-        World world = plugin.windicator.getWorld();
-        if (plugin.windicator.isVictory()) {
+        if (!plugin.getWindicator().isValid()) return;
+        World world = plugin.getWindicator().getWorld();
+        if (plugin.getWindicator().isVictory()) {
             if (ticks % 100 == 0) {
-                for (Player player : plugin.windicator.getWorld().getPlayers()) {
+                for (Player player : plugin.getWindicator().getWorld().getPlayers()) {
                     player.showTitle(Title.title(Component.text("Victory", NamedTextColor.GOLD),
                                                  Component.text("Windicator", NamedTextColor.GOLD)));
                 }
@@ -34,27 +34,27 @@ public final class Tick implements Runnable {
             if (ticks % 200 == 0) {
                 for (CoreType coreType : CoreType.values()) {
                     boolean spawned = false;
-                    for (Block block : plugin.windicator.getCoreBlocks(coreType)) {
+                    for (Block block : plugin.getWindicator().getCoreBlocks(coreType)) {
                         if (!block.getType().isSolid()) {
-                            plugin.windicator.removeCore(block, coreType);
-                            plugin.windicator.save();
+                            plugin.getWindicator().removeCore(block, coreType);
+                            plugin.getWindicator().save();
                             continue;
                         } else {
                             block.getWorld().spawnParticle(org.bukkit.Particle.LAVA,
                                                            block.getLocation().add(0.5, 1.0, 0.5),
                                                            8, 0.125, 0.125, 0.125, 0.0);
                         }
-                        spawned = plugin.windicator.createNewSpawner(block, coreType);
+                        spawned = plugin.getWindicator().createNewSpawner(block, coreType);
                     }
                 }
             }
-            plugin.windicator.respawnBosses();
-            if (ticks % 10 == 0) plugin.windicator.spawnAll();
-            plugin.windicator.regen();
+            plugin.getWindicator().respawnBosses();
+            if (ticks % 10 == 0) plugin.getWindicator().spawnAll();
+            plugin.getWindicator().regen();
             final double time = (double) ticks * 0.2;
             final float dy = (float) (Math.sin(time) * 0.05);
             for (CoreType coreType : CoreType.values()) {
-                for (Block block : plugin.windicator.getCoreBlocks(coreType)) {
+                for (Block block : plugin.getWindicator().getCoreBlocks(coreType)) {
                     boolean hasOutline = false;
                     final Location location = block.getLocation();
                     for (BlockDisplay bd : location.getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {

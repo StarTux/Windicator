@@ -2,15 +2,16 @@ package com.cavetale.windicator;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 
+@Getter
 public final class WindicatorPlugin extends JavaPlugin {
-    protected final Windicator windicator = new Windicator(this);
-    protected final EventListener listener = new EventListener(this);
-    protected final Tick tick = new Tick(this);
-    protected final Json json = new Json(this);
-    protected final Random random = ThreadLocalRandom.current();
-    protected final WindicatorCommand command = new WindicatorCommand(this);
+    private final Windicator windicator = new Windicator(this);
+    private final EventListener listener = new EventListener(this);
+    private final Tick tick = new Tick(this);
+    private final Random random = ThreadLocalRandom.current();
+    private final WindicatorCommand command = new WindicatorCommand(this);
 
     @Override
     public void onEnable() {
@@ -27,7 +28,7 @@ public final class WindicatorPlugin extends JavaPlugin {
         windicator.disable();
     }
 
-    int rnd(int len) {
+    public int rnd(int len) {
         return random.nextBoolean()
             ? random.nextInt(len)
             : -random.nextInt(len);

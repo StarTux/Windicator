@@ -1,31 +1,32 @@
 package com.cavetale.windicator;
 
+import com.cavetale.core.struct.Vec3i;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.Data;
 
 /**
  * JSONable.
  */
-@ToString @EqualsAndHashCode
-public final class State {
-    boolean enabled = false;
-    boolean victory = false;
-    Map<String, List<Vec3>> cores = new HashMap<>();
-    Map<UUID, Integer> scores = new HashMap<>();
+@Data
+public final class State implements Serializable {
+    private boolean enabled = false;
+    private boolean victory = false;
+    private Map<CoreType, List<Vec3i>> cores = new HashMap<>();
+    private Map<UUID, Integer> scores = new HashMap<>();
 
-    boolean isValid() {
+    public boolean isValid() {
         return enabled;
     }
 
-    protected int getScore(UUID uuid) {
+    public int getScore(UUID uuid) {
         return scores.getOrDefault(uuid, 0);
     }
 
-    protected void addScore(UUID uuid, int value) {
+    public void addScore(UUID uuid, int value) {
         scores.put(uuid, getScore(uuid) + value);
     }
 }

@@ -1,12 +1,16 @@
 package com.cavetale.windicator;
 
 import com.cavetale.core.exploits.PlayerPlacedBlocks;
+import com.cavetale.core.struct.Vec3i;
+import com.cavetale.core.util.Json;
 import com.cavetale.fam.trophy.Highscore;
 import com.cavetale.mytems.item.trophy.TrophyCategory;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumSet;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -26,14 +30,11 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.BlockDisplay;
-import org.bukkit.entity.ElderGuardian;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Illusioner;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Wither;
-import org.bukkit.entity.WitherSkeleton;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import static com.cavetale.core.util.CamelCase.toCamelCase;
 import static com.cavetale.mytems.util.Collision.collidesWithBlock;
@@ -41,26 +42,22 @@ import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.*;
 
+@Getter
 @RequiredArgsConstructor
 public final class Windicator {
     public static final String WORLD = "windicator";
     public static final String MIRROR_WORLD = "windicator_copy";
-    final WindicatorPlugin plugin;
-    @Getter private State state;
-    ElderGuardian waterBoss;
-    Illusioner mansionBoss;
-    WitherSkeleton endBoss;
-    protected int waterBossCooldown;
-    protected int mansionBossCooldown;
-    protected int endBossCooldown;
-    Wither boss = null;
-    static final String STATE_PATH = "state.json";
-    static final int BOSS_COOLDOWN = 20 * 60;
-    protected List<Highscore> highscore = List.of();
-    protected List<Component> highscoreLines = List.of();
+    public static final String STATE_PATH = "state.json";
+    public static final int BOSS_COOLDOWN = 20 * 60;
+    private final WindicatorPlugin plugin;
+    private State state;
+    private final Map<CoreType, CoreBoss> bossMap = new EnumMap<>(CoreType.class);
+    private Wither boss = null;
+    private List<Highscore> highscore = List.of();
+    private List<Component> highscoreLines = List.of();
 
     protected void load() {
-        state = plugin.json.load(STATE_PATH, State.class, State::new);
+        state = Json.load(new File(STATE_PATH), State.class, State::new);
         for (Chunk chunk : getWorld().getLoadedChunks()) {
             getMirrorWorld().getChunkAtAsync(chunk.getX(), chunk.getZ(), (Consumer<Chunk>) mchunk -> {
                     mchunk.addPluginChunkTicket(plugin);
@@ -71,7 +68,7 @@ public final class Windicator {
 
     protected void disable() {
         for (CoreType coreType : CoreType.values()) {
-            for (Block block : plugin.windicator.getCoreBlocks(coreType)) {
+            for (Block block : getCoreBlocks(coreType)) {
                 for (BlockDisplay bd : block.getLocation().getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
                     bd.remove();
                 }
@@ -79,57 +76,57 @@ public final class Windicator {
         }
     }
 
-    void save() {
-        plugin.json.save(STATE_PATH, state, true);
+    public void save() {
+        Json.save(new File(STATE_PATH), state, true);
     }
 
-    boolean isValid() {
+    public boolean isValid() {
         return state != null && state.isValid();
     }
 
     public boolean isPlaying() {
-        return state != null && state.enabled && !state.victory;
+        return state != null && state.isEnabled() && !state.isVictory();
     }
 
-    void setEnabled(boolean enabled) {
-        getWorld().setDifficulty(Difficulty.HARD);
-        state.enabled = enabled;
+    public void setEnabled(boolean enabled) {
+        getWorld().setDifficulty(enabled ? Difficulty.HARD : Difficulty.PEACEFUL);
+        state.setEnabled(enabled);
     }
 
-    boolean isCore(Block block, CoreType coreType) {
-        List<Vec3> list = getCores(coreType);
+    public boolean isCore(Block block, CoreType coreType) {
+        final List<Vec3i> list = getCores(coreType);
         if (list == null) return false;
-        for (Vec3 vec : list) {
-            if (vec.isSimilar(block)) return true;
+        for (Vec3i vec : list) {
+            if (vec.equals(Vec3i.of(block))) return true;
         }
         return false;
     }
 
-    CoreType coreAt(Block block) {
+    public CoreType coreAt(Block block) {
         for (CoreType coreType : CoreType.values()) {
             if (isCore(block, coreType)) return coreType;
         }
         return null;
     }
 
-    boolean addCore(Block block, CoreType coreType) {
-        List<Vec3> list = state.cores.get(coreType.name().toLowerCase());
+    public boolean addCore(Block block, CoreType coreType) {
+        List<Vec3i> list = state.getCores().get(coreType);
         if (list == null) {
             list = new ArrayList<>();
-            state.cores.put(coreType.name().toLowerCase(), list);
+            state.getCores().put(coreType, list);
         }
-        Vec3 vec = Vec3.of(block);
+        Vec3i vec = Vec3i.of(block);
         if (list.contains(vec)) return false;
         list.add(vec);
         return true;
     }
 
-    boolean removeCore(Block block, CoreType coreType) {
-        List<Vec3> list = getCores(coreType);
+    public boolean removeCore(Block block, CoreType coreType) {
+        List<Vec3i> list = getCores(coreType);
         if (list == null || list.isEmpty()) return false;
-        boolean res = list.remove(Vec3.of(block));
+        boolean res = list.remove(Vec3i.of(block));
         if (list.isEmpty()) {
-            state.cores.remove(coreType.name().toLowerCase());
+            state.getCores().remove(coreType.name().toLowerCase());
         }
         for (BlockDisplay bd : block.getLocation().getNearbyEntitiesByType(BlockDisplay.class, 0.5, 0.5, 0.5)) {
             bd.remove();
@@ -137,15 +134,15 @@ public final class Windicator {
         return res;
     }
 
-    List<Vec3> getCores(CoreType coreType) {
-        List<Vec3> list = state.cores.get(coreType.name().toLowerCase());
+    public List<Vec3i> getCores(CoreType coreType) {
+        List<Vec3i> list = state.getCores().get(coreType.name().toLowerCase());
         return list == null
             ? List.of()
             : list;
     }
 
-    List<Block> getCoreBlocks(CoreType coreType) {
-        List<Vec3> list = getCores(coreType);
+    public List<Block> getCoreBlocks(CoreType coreType) {
+        List<Vec3i> list = getCores(coreType);
         if (list == null) return List.of();
         World world = getWorld();
         if (world == null) return List.of();
@@ -154,76 +151,50 @@ public final class Windicator {
             .collect(Collectors.toList());
     }
 
-    int countCoreBlocks(CoreType coreType) {
-        List<Vec3> list = getCores(coreType);
+    public int countCoreBlocks(CoreType coreType) {
+        List<Vec3i> list = getCores(coreType);
         if (list == null) return 0;
         return list.size();
     }
 
-    void clearCores() {
-        state.cores.clear();
+    public void clearCores() {
+        state.getCores().clear();
     }
 
-    boolean isInWorld(@NonNull Block block) {
+    public boolean isInWorld(@NonNull Block block) {
         return block.getWorld().getName().equals(WORLD);
     }
 
-    boolean isInWorld(@NonNull Entity entity) {
+    public boolean isInWorld(@NonNull Entity entity) {
         return entity.getWorld().getName().equals(WORLD);
     }
 
-    boolean isWorld(@NonNull World world) {
+    public boolean isWorld(@NonNull World world) {
         return world.getName().equals(WORLD);
     }
 
-    World getWorld() {
+    public World getWorld() {
         return Bukkit.getWorld(WORLD);
     }
 
-    World getMirrorWorld() {
+    public World getMirrorWorld() {
         return Bukkit.getWorld(MIRROR_WORLD);
-    }
-
-    Set<EntityType> getCoreEntities(CoreType coreType) {
-        switch (coreType) {
-        case WATER:
-            return EnumSet.of(EntityType.GUARDIAN,
-                              EntityType.DROWNED,
-                              EntityType.PUFFERFISH);
-        case MANSION:
-            return EnumSet.of(EntityType.PILLAGER,
-                              EntityType.RAVAGER,
-                              EntityType.ZOMBIE,
-                              EntityType.SKELETON,
-                              EntityType.VINDICATOR,
-                              EntityType.WITCH,
-                              EntityType.CREEPER,
-                              EntityType.CAVE_SPIDER,
-                              EntityType.SPIDER,
-                              EntityType.WITHER_SKELETON);
-        case END:
-            return EnumSet.of(EntityType.ENDERMAN,
-                              EntityType.GHAST,
-                              EntityType.PHANTOM,
-                              EntityType.ENDERMITE);
-        default: return Collections.emptySet();
-        }
     }
 
     public CoreType coreOf(EntityType entityType) {
         for (CoreType coreType : CoreType.values()) {
-            if (getCoreEntities(coreType).contains(entityType)) return coreType;
+            if (coreType.getCoreEntities().contains(entityType)) return coreType;
         }
         return null;
     }
 
-    boolean createNewSpawner(Block origin, CoreType coreType) {
+    public boolean createNewSpawner(Block origin, CoreType coreType) {
         final int dist = 12;
-        Set<EntityType> set = getCoreEntities(coreType);
+        final Set<EntityType> set = coreType.getCoreEntities();
         if (set.isEmpty()) return false;
-        Block block = origin.getRelative(plugin.rnd(dist),
-                                         plugin.rnd(dist),
-                                         plugin.rnd(dist));
+        final Block block = origin.getRelative(plugin.rnd(dist),
+                                               plugin.rnd(dist),
+                                               plugin.rnd(dist));
         if (block.getY() <= 0) return false; // bedrock on old map
         if (!block.isEmpty() && !block.isLiquid()) return false;
         int nbor = 0;
@@ -245,10 +216,10 @@ public final class Windicator {
             EntityType spawnerType = spawner.getSpawnedType();
             if (set.contains(spawnerType)) return false;
         }
-        List<EntityType> opts = new ArrayList<>(set);
-        EntityType entityType = opts.get(plugin.random.nextInt(opts.size()));
+        final List<EntityType> opts = List.copyOf(set);
+        final EntityType entityType = opts.get(plugin.getRandom().nextInt(opts.size()));
         block.setType(Material.SPAWNER);
-        CreatureSpawner spawner = (CreatureSpawner) block.getState();
+        final CreatureSpawner spawner = (CreatureSpawner) block.getState();
         spawner.setSpawnedType(entityType);
         spawner.update(true, false);
         plugin.getLogger().info(coreType + ": created " + entityType
@@ -257,40 +228,44 @@ public final class Windicator {
         return true;
     }
 
-    boolean isVictory() {
-        return state.victory;
+    public boolean isVictory() {
+        return state.isVictory();
     }
 
-    void setVictory(boolean victory) {
-        state.victory = victory;
+    public void setVictory(boolean value) {
+        state.setVictory(value);
     }
 
-    <T extends Mob> T spawnBoss(CoreType coreType, Class<T> clazz) {
-        List<Vec3> cores = getCores(coreType);
+    public Mob tryToSpawnBoss(CoreType coreType) {
+        List<Vec3i> cores = getCores(coreType);
         if (cores == null || cores.isEmpty()) return null;
-        Vec3 v = cores.get(plugin.random.nextInt(cores.size()));
-        World world = getWorld();
+        final Vec3i v = cores.get(plugin.getRandom().nextInt(cores.size()));
+        final World world = getWorld();
         if (world == null) return null;
         if (!world.isChunkLoaded(v.getX() >> 4, v.getZ() >> 4)) return null;
-        Block origin = world.getBlockAt(v.getX(), v.getY(), v.getZ());
-        Block block = origin.getRelative(plugin.rnd(8), plugin.rnd(8), plugin.rnd(8));
+        final Block origin = world.getBlockAt(v.getX(), v.getY(), v.getZ());
+        final Block block = origin.getRelative(plugin.rnd(8), plugin.rnd(8), plugin.rnd(8));
         switch (coreType) {
         case WATER:
             if (!block.isLiquid()) return null;
             break;
         default:
             if (!block.isEmpty()) return null;
+            if (!block.getRelative(0, 1, 0).isEmpty()) return null;
             if (!block.getRelative(0, -1, 0).isSolid()) return null;
             break;
         }
-        T result = world.spawn(block.getLocation().add(0.5, 0.0, 0.5), clazz, e -> {
+        @SuppressWarnings("unchecked")
+        final Mob result = (Mob) world.spawn(block.getLocation().add(0.5, 0.0, 0.5), coreType.getBossType().getEntityClass(), who -> {
+                if (!(who instanceof Mob e)) return;
                 final double health = 100.0;
                 if (e.getHealth() < health) {
                     e.getAttribute(Attribute.MAX_HEALTH).setBaseValue(health);
                     e.setHealth(health);
-                    e.getAttribute(Attribute.ATTACK_DAMAGE).setBaseValue(10.0);
-                    e.getAttribute(Attribute.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
                 }
+                e.getAttribute(Attribute.ATTACK_DAMAGE).setBaseValue(10.0);
+                e.getAttribute(Attribute.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
+                e.getAttribute(Attribute.SCALE).setBaseValue(2.0);
                 e.setPersistent(false);
                 e.setRemoveWhenFarAway(false);
                 e.customName(text(toCamelCase(" ", coreType), GOLD, BOLD));
@@ -299,14 +274,18 @@ public final class Windicator {
                     e.remove();
                 }
             });
-        if (result == null || result.isDead()) return null;
+        if (result == null || result.isDead()) {
+            plugin.getLogger().severe("Failed to spawn boss: " + coreType);
+            return null;
+        }
         plugin.getLogger().info(coreType + ": spawned " + result.getType()
                                 + " at " + Blocks.toString(block));
         return result;
     }
 
-    void respawnBosses() {
-        if (state.cores.isEmpty()) {
+    public void respawnBosses() {
+        // Spawn the Wither Boss
+        if (state.getCores().isEmpty()) {
             if (boss == null || !boss.isValid()) {
                 boss = null;
                 World world = getWorld();
@@ -326,47 +305,37 @@ public final class Windicator {
             }
             return;
         }
-        if (countCoreBlocks(CoreType.WATER) > 0) {
-            if (waterBoss == null || waterBoss.isDead()) {
-                waterBoss = null;
-                if (waterBossCooldown > 0) {
-                    waterBossCooldown -= 1;
-                } else {
-                    waterBoss = spawnBoss(CoreType.WATER, ElderGuardian.class);
-                }
+        for (CoreType coreType : CoreType.values()) {
+            if (countCoreBlocks(coreType) == 0) {
+                continue;
             }
-        }
-        if (countCoreBlocks(CoreType.MANSION) > 0) {
-            if (mansionBoss == null || mansionBoss.isDead()) {
-                mansionBoss = null;
-                if (mansionBossCooldown > 0) {
-                    mansionBossCooldown -= 1;
-                } else {
-                    mansionBoss = spawnBoss(CoreType.MANSION, Illusioner.class);
-                }
+            CoreBoss coreBoss = bossMap.get(coreType);
+            if (coreBoss == null) {
+                coreBoss = new CoreBoss();
+                bossMap.put(coreType, coreBoss);
             }
-        }
-        if (countCoreBlocks(CoreType.END) > 0) {
-            if (endBoss == null || endBoss.isDead()) {
-                endBoss = null;
-                if (endBossCooldown > 0) {
-                    endBossCooldown -= 1;
-                } else {
-                    endBoss = spawnBoss(CoreType.END, WitherSkeleton.class);
-                }
+            if (coreBoss.getMob() != null && !coreBoss.getMob().isDead()) {
+                continue;
+            }
+            coreBoss.setMob(null);
+            final int cooldown = coreBoss.getCooldown();
+            if (cooldown > 0) {
+                coreBoss.setCooldown(cooldown - 1);
+            } else {
+                coreBoss.setMob(tryToSpawnBoss(coreType));
             }
         }
     }
 
-    protected void regen() {
+    public void regen() {
         World world = getWorld();
         World mirror = getMirrorWorld();
         if (world == null || mirror == null) return;
-        int inx = plugin.random.nextInt(16);
-        int inz = plugin.random.nextInt(16);
+        int inx = plugin.getRandom().nextInt(16);
+        int inz = plugin.getRandom().nextInt(16);
         List<Chunk> chunks = new ArrayList<>();
         for (Chunk chunk : world.getLoadedChunks()) chunks.add(chunk);
-        Collections.shuffle(chunks, plugin.random);
+        Collections.shuffle(chunks, plugin.getRandom());
         for (Chunk chunk : chunks) {
             if (chunk.getLoadLevel() != Chunk.LoadLevel.ENTITY_TICKING) continue;
             int x = (chunk.getX() << 4) + inx;
@@ -395,15 +364,15 @@ public final class Windicator {
      * Try to spawn mobs from any spawner in the world.
      * Called regularly by Tick.
      */
-    protected void spawnAll() {
+    public void spawnAll() {
         World world = getWorld();
         World mirror = getMirrorWorld();
         if (world == null || mirror == null) return;
-        int inx = plugin.random.nextInt(16);
-        int inz = plugin.random.nextInt(16);
+        int inx = plugin.getRandom().nextInt(16);
+        int inz = plugin.getRandom().nextInt(16);
         List<Chunk> chunks = new ArrayList<>();
         for (Chunk chunk : world.getLoadedChunks()) chunks.add(chunk);
-        Collections.shuffle(chunks, plugin.random);
+        Collections.shuffle(chunks, plugin.getRandom());
         for (Chunk chunk : chunks) {
             if (chunk.getLoadLevel() != Chunk.LoadLevel.ENTITY_TICKING) continue;
             for (BlockState blockState : chunk.getTileEntities()) {
@@ -433,20 +402,23 @@ public final class Windicator {
         }
     }
 
-    void clearMobs() {
+    public void clearMobs() {
         if (boss != null) boss.remove();
-        if (waterBoss != null) waterBoss.remove();
-        if (mansionBoss != null) mansionBoss.remove();
-        if (endBoss != null) endBoss.remove();
+        for (CoreBoss coreBoss : bossMap.values()) {
+            if (coreBoss.getMob() != null) {
+                coreBoss.getMob().remove();
+            }
+        }
+        bossMap.clear();
     }
 
-    protected void addScore(Player player, int value) {
+    public void addScore(Player player, int value) {
         state.addScore(player.getUniqueId(), value);
         computeHighscore();
     }
 
-    protected void computeHighscore() {
-        highscore = Highscore.of(plugin.windicator.getState().scores);
+    public void computeHighscore() {
+        highscore = Highscore.of(state.getScores());
         highscoreLines = Highscore.sidebar(highscore, TrophyCategory.SWORD);
     }
 }
