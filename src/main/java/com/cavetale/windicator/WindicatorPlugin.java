@@ -17,7 +17,7 @@ public final class WindicatorPlugin extends JavaPlugin {
     public void onEnable() {
         getServer().getScheduler().runTaskTimer(this, tick, 1L, 1L);
         getServer().getPluginManager().registerEvents(listener, this);
-        getCommand("windicator").setExecutor(command);
+        command.enable();
         windicator.load();
     }
 
