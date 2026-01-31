@@ -211,8 +211,8 @@ public final class Windicator {
                                          plugin.rnd(dist));
         final int min = block.getWorld().getMinHeight();
         final int max = block.getWorld().getMaxHeight();
-        while (!block.isEmpty() && !block.isLiquid() && block.getY() < max) {
-            block = block.getRelative(0, 1, 0);
+        if (!block.isEmpty() && !block.isLiquid()) {
+            return false;
         }
         if (block.getY() < min) return false; // bedrock on old map
         if (!block.isEmpty() && !block.isLiquid()) return false;
