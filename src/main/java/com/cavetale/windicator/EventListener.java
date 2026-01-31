@@ -116,6 +116,7 @@ public final class EventListener implements Listener {
                                       new ItemStack(Material.EMERALD,
                                                     2 + 2 * plugin.getRandom().nextInt(5)));
             plugin.getWindicator().addScore(event.getPlayer(), 10);
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ml add " + event.getPlayer().getName());
         }
         if (block.getType().name().endsWith("_ORE")) {
             event.setDropItems(false);
@@ -180,6 +181,7 @@ public final class EventListener implements Listener {
         }
         plugin.getLogger().info(player.getName() + " broke the " + coreType + " core");
         plugin.getWindicator().addScore(player, 25);
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ml add " + player.getName());
     }
 
     @EventHandler
@@ -214,12 +216,16 @@ public final class EventListener implements Listener {
         }
         if (entity instanceof Mob && !(entity instanceof Animals)) {
             event.getDrops().clear();
-            if (entity.getKiller() == null) return;
+            final Player killer = entity.getKiller();
+            if (killer == null) return;
             if (entity.getEntitySpawnReason() == CreatureSpawnEvent.SpawnReason.SLIME_SPLIT) return;
             CoreType coreType = plugin.getWindicator().coreOf(entity.getType());
             if (coreType == null) return;
             event.getDrops().add(new ItemStack(Material.EMERALD, 1 + plugin.getRandom().nextInt(5)));
-            plugin.getWindicator().addScore(entity.getKiller(), 1);
+            if (plugin.getWindicator().getScore(killer) == 0) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ml add " + killer.getName());
+            }
+            plugin.getWindicator().addScore(killer, 1);
         }
     }
 
@@ -287,8 +293,7 @@ public final class EventListener implements Listener {
     @EventHandler
     private void onPlayerJoin(PlayerJoinEvent event) {
         final Player player = event.getPlayer();
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                               "ml add " + player.getName());
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ml add " + player.getName());
         if (!player.hasPlayedBefore()) {
             player.getInventory().addItem(new ItemStack(Material.WOODEN_SWORD));
             player.getInventory().addItem(Mytems.ORANGE_CANDY.createItemStack());

@@ -442,6 +442,10 @@ public final class Windicator {
         computeHighscore();
     }
 
+    public int getScore(Player player) {
+        return state.getScore(player.getUniqueId());
+    }
+
     public void computeHighscore() {
         highscore = Highscore.of(state.getScores());
         highscoreLines = Highscore.sidebar(highscore, TrophyCategory.SWORD);
