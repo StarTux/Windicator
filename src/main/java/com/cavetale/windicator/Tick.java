@@ -32,7 +32,7 @@ public final class Tick implements Runnable {
                 }
             }
         } else {
-            if (ticks % 300 == 0) {
+            if (ticks % 600 == 0) {
                 for (CoreType coreType : CoreType.values()) {
                     for (Block block : plugin.getWindicator().getCoreBlocksIfLoaded(coreType)) {
                         if (!block.getType().isSolid()) {
