@@ -47,6 +47,9 @@ public enum CoreType {
             EntityType.BREEZE,
             EntityType.HUSK,
             EntityType.SKELETON,
+            EntityType.STRAY,
+            EntityType.PARCHED,
+            EntityType.ZOMBIE,
             EntityType.CREEPER,
             EntityType.SPIDER
         )
@@ -56,6 +59,9 @@ public enum CoreType {
         Set.of(
             EntityType.HUSK,
             EntityType.SKELETON,
+            EntityType.STRAY,
+            EntityType.PARCHED,
+            EntityType.ZOMBIE,
             EntityType.CREEPER,
             EntityType.SPIDER,
             EntityType.WITCH,
@@ -68,6 +74,9 @@ public enum CoreType {
             EntityType.BREEZE,
             EntityType.HUSK,
             EntityType.SKELETON,
+            EntityType.STRAY,
+            EntityType.PARCHED,
+            EntityType.ZOMBIE,
             EntityType.CREEPER,
             EntityType.SPIDER
         )
@@ -78,6 +87,9 @@ public enum CoreType {
             EntityType.PILLAGER,
             EntityType.HUSK,
             EntityType.SKELETON,
+            EntityType.STRAY,
+            EntityType.PARCHED,
+            EntityType.ZOMBIE,
             EntityType.CREEPER,
             EntityType.SPIDER,
             EntityType.WITCH,
