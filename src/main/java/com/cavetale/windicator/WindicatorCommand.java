@@ -166,5 +166,6 @@ public final class WindicatorCommand extends AbstractCommand<WindicatorPlugin> {
             sender.sendMessage(line);
         }
         sender.sendMessage(text(count + " players rewarded", YELLOW));
+        Highscore.rewardMoneyWithFeedback(sender, plugin, plugin.getWindicator().getState().getScores(), "Windicator");
     }
 }
