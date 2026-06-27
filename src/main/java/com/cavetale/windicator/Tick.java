@@ -69,6 +69,8 @@ public final class Tick implements Runnable {
                                 e.setPersistent(false);
                                 e.setBlock(Material.SPAWNER.createBlockData());
                                 e.setBrightness(new BlockDisplay.Brightness(15, 15));
+                                e.setGlowing(true);
+                                e.setGlowColorOverride(org.bukkit.Color.BLACK);
                             });
                         plugin.getLogger().info("Spawned outline at " + block.getX() + " " +  block.getY() + " " + block.getZ());
                     }
