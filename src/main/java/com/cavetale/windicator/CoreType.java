@@ -96,6 +96,31 @@ public enum CoreType {
             EntityType.SLIME
         )
     ),
+    TORNADO(
+        EntityType.EVOKER,
+        Set.of(
+            EntityType.VEX,
+            EntityType.BREEZE,
+            EntityType.STRAY
+        )
+    ),
+    CANYON(
+        EntityType.SPIDER,
+        Set.of(
+            EntityType.HUSK,
+            EntityType.CREEPER,
+            EntityType.CAVE_SPIDER,
+            EntityType.SPIDER
+        )
+    ),
+    VILLAGE(
+        EntityType.ZOMBIE,
+        Set.of(
+            EntityType.ZOMBIE_VILLAGER,
+            EntityType.SLIME,
+            EntityType.ENDERMAN
+        )
+    ),
     ;
 
     private final String displayName = toCamelCase(" ", this);
