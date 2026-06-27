@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.bossbar.BossBar;
@@ -326,6 +327,17 @@ public final class EventListener implements Listener {
 
     @EventHandler
     private void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (event.getEntityType() == EntityType.BREEZE && ThreadLocalRandom.current().nextInt(5) > 0) {
+            int total = 0;
+            for (Entity e : event.getEntity().getWorld().getEntities()) {
+                if (e.getType() == EntityType.BREEZE) total += 1;
+            }
+            if (total > 10) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        event.getEntity().setRemoveWhenFarAway(true);
         final Entity mob = event.getEntity();
         if (mob instanceof Zombie zombie) {
             zombie.setShouldBurnInDay(false);
