@@ -146,7 +146,7 @@ public final class EventListener implements Listener {
         final Duration breakTime;
         switch (item.getType()) {
         case IRON_PICKAXE:
-            breakTime = Duration.ofSeconds(137L * 2L);
+            breakTime = Duration.ofSeconds(64L * 2L);
             break;
         case DIAMOND_PICKAXE:
             breakTime = Duration.ofSeconds(31L * 2L);
