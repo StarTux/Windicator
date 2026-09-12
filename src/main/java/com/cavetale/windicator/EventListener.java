@@ -113,11 +113,23 @@ public final class EventListener implements Listener {
             return;
         }
         if (block.getType() == Material.SPAWNER) {
-            block.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5),
-                                      new ItemStack(Material.EMERALD,
-                                                    2 + 2 * plugin.getRandom().nextInt(5)));
+            block.getWorld().dropItem(
+                block.getLocation().add(0.5, 0.5, 0.5),
+                new ItemStack(Material.EMERALD,
+                              2 + 2 * plugin.getRandom().nextInt(5))
+            );
             plugin.getWindicator().addScore(event.getPlayer(), 10);
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ml add " + event.getPlayer().getName());
+            final Vec3i blockVector = Vec3i.of(block);
+            for (CoreType coreType : CoreType.values()) {
+                for (Vec3i coreVector : plugin.getWindicator().getCores(coreType)) {
+                    if (blockVector.maxDistance(coreVector) <= 12) {
+                        final long seconds = 60L;
+                        plugin.getWindicator().getCoreCooldowns().put(coreVector, System.currentTimeMillis() + seconds * 1000L);
+                        plugin.getLogger().info(seconds + " seconds cooldown for " + coreType.getDisplayName() + " Core at " + coreVector + " due to spawner break at " + blockVector);
+                    }
+                }
+            }
         }
         if (block.getType().name().endsWith("_ORE")) {
             event.setDropItems(false);

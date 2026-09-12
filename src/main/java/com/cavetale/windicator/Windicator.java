@@ -9,6 +9,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +56,7 @@ public final class Windicator {
     private Wither boss = null;
     private List<Highscore> highscore = List.of();
     private List<Component> highscoreLines = List.of();
+    private final Map<Vec3i, Long> coreCooldowns = new HashMap<>();
 
     protected void load() {
         state = Json.load(new File(plugin.getDataFolder(), STATE_PATH), State.class, State::new);

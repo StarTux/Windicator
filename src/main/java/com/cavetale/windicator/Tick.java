@@ -1,5 +1,6 @@
 package com.cavetale.windicator;
 
+import com.cavetale.core.struct.Vec3i;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -44,7 +45,13 @@ public final class Tick implements Runnable {
                                                            block.getLocation().add(0.5, 1.0, 0.5),
                                                            8, 0.125, 0.125, 0.125, 0.0);
                         }
-                        final boolean spawned = plugin.getWindicator().createNewSpawner(block, coreType);
+                        final Vec3i blockVector = Vec3i.of(block);
+                        final long cooldown = plugin.getWindicator().getCoreCooldowns().getOrDefault(blockVector, 0L);
+                        if (cooldown >= System.currentTimeMillis()) {
+                            plugin.getLogger().info(coreType.getDisplayName() + " Core at " + blockVector + " is on cooldown!");
+                        } else {
+                            final boolean spawned = plugin.getWindicator().createNewSpawner(block, coreType);
+                        }
                     }
                 }
             }
