@@ -5,8 +5,15 @@ api-version: '26.1.2'
 description: Windicator Plugin
 author: StarTux
 website: https://cavetale.com
-depend: [Core, Mytems, Fam]
+
+depend:
+- Core
+- Mytems
+- Fam
+- Kit
+
 softdepend: []
+
 commands:
   windicator:
     aliases: [win]

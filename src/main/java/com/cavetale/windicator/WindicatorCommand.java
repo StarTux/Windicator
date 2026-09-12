@@ -8,6 +8,7 @@ import com.cavetale.core.struct.Vec3i;
 import com.cavetale.core.util.Json;
 import com.cavetale.fam.trophy.Highscore;
 import com.cavetale.mytems.item.trophy.TrophyCategory;
+import com.winthier.kit.Kits;
 import java.util.List;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -167,5 +168,6 @@ public final class WindicatorCommand extends AbstractCommand<WindicatorPlugin> {
         }
         sender.sendMessage(text(count + " players rewarded", YELLOW));
         Highscore.rewardMoneyWithFeedback(sender, plugin, plugin.getWindicator().getState().getScores(), "Windicator");
+        Kits.autoCreateKit(sender, "windicator", plugin.getWindicator().getState().getScores().keySet());
     }
 }
