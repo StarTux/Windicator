@@ -121,6 +121,32 @@ public enum CoreType {
             EntityType.ENDERMAN
         )
     ),
+    SPIDER_DEN(
+        EntityType.SPIDER,
+        Set.of(
+            EntityType.SPIDER,
+            EntityType.CAVE_SPIDER,
+            EntityType.SILVERFISH
+        )
+    ),
+    WITCH_COVEN(
+        EntityType.WITCH,
+        Set.of(
+            EntityType.PILLAGER,
+            EntityType.EVOKER,
+            EntityType.VINDICATOR,
+            EntityType.ILLUSIONER,
+            EntityType.RAVAGER
+        )
+    ),
+    BARRON_FORT(
+        EntityType.BOGGED,
+        Set.of(
+            EntityType.BOGGED,
+            EntityType.WITCH,
+            EntityType.ZOMBIE
+        )
+    ),
     ;
 
     private final String displayName = toCamelCase(" ", this);
